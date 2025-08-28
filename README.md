@@ -1,6 +1,6 @@
 # Use Pyth price feeds on Solana with Anchor
 
-This tutorial shows how to read Pyth prices inside a Solana program (Anchor) using the modern *Pyth Solana Receiver* pattern. You'll verify freshness (staleness), interpret price *exponent (decimals)* and *confidence intervals*, and print a human‑readable value off‑chain.
+This guide shows how to consume Pyth prices inside an Anchor program (on-chain) using the Solana Receiver. We'll verify staleness, exponent (decimals), and confidence. A tiny off-chain snippet invokes the program and prints a human-readable price for verification.
 
 ## Table of contents
 - [Use Pyth price feeds on Solana with Anchor](#use-pyth-price-feeds-on-solana-with-anchor)
