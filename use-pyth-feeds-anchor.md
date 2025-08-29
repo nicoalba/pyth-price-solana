@@ -16,7 +16,17 @@ This tutorial shows you how to consume a [Pyth price](https://www.pyth.network/p
 - Rust, Solana CLI, and Anchor installed (Anchor ≥ 0.29 recommended)
 - Node 18+ and npm (for the client script)
 - A devnet RPC URL (e.g., a QuickNode endpoint) and a funded devnet keypair
-- The *feed ID (hex)* for the asset you want (e.g., ETH/USD)
+- The feed ID (hex) for the asset you want (e.g., ETH/USD). 
+  
+To get your feed ID:
+
+1. Open [Pyth Insights: Price Feeds](https://insights.pyth.network/price-feeds).
+2. Search for your asset.
+3. Copy the Price Feed ID shown.
+  
+    For example, the feed ID for ETH/USD (used in this tutorial) is: `0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace`
+
+For more info, see [How to fFetch price updates](https://docs.pyth.network/price-feeds/fetch-price-updates) on Pyth docs.
 
 ## Set up the project scaffold
 
@@ -62,7 +72,7 @@ This tutorial shows you how to consume a [Pyth price](https://www.pyth.network/p
     declare_id!("11111111111111111111111111111111"); // replace with your program id
 
     const MAX_AGE_SECS: u64 = 60;                    // freshness threshold
-    const FEED_ID_HEX: &str = "<PUT_FEED_ID_HEX>";   // e.g., ETH/USD feed id (hex)
+    const FEED_ID_HEX: &str = "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace";   // e.g., ETH/USD feed id (hex)
     const MAX_CONF_RATIO_BPS: u64 = 200;             // 2% conf/price cap (optional)
 
     #[program]
@@ -121,7 +131,6 @@ This tutorial shows you how to consume a [Pyth price](https://www.pyth.network/p
   solana config set --url https://<your-devnet-rpc>
   ```
 
-
 2. Run build and deploy:
 
     ```bash
@@ -145,7 +154,7 @@ This tutorial shows you how to consume a [Pyth price](https://www.pyth.network/p
     ```bash
     export SOLANA_RPC_URL="https://<your-devnet-rpc>"   # e.g., your QuickNode devnet URL
     export PROGRAM_ID="<your-program-id>"               # from `anchor deploy`
-    export PYTH_FEED_ID_HEX="0x<your-feed-id-hex>"     # the same feed id you set in FEED_ID_HEX
+    export PYTH_FEED_ID_HEX="0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace"     # the same feed id you set in FEED_ID_HEX
     export PAYER_KEYPAIR="~/.config/solana/id.json"     # path to your devnet keypair
     ```
 
@@ -226,9 +235,9 @@ This tutorial shows you how to consume a [Pyth price](https://www.pyth.network/p
    
 ## Troubleshooting
 
-- **program id mismatch**: keep `declare_id!`, `Anchor.toml`, and `target/deploy/*.json` in sync.
-- **stale price**: fetch just before sending; adjust `MAX_AGE_SECS` if needed.
-- **version friction**: pin the receiver/sdk versions as shown above.
+- **Program id mismatch**: keep `declare_id!`, `Anchor.toml`, and `target/deploy/*.json` in sync.
+- **Stale price**: fetch just before sending; adjust `MAX_AGE_SECS` if needed.
+- **Version friction**: pin the receiver/sdk versions as shown above.
 
 ## Use a price feed account instead (optional)
 
