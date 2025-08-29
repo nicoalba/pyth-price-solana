@@ -107,10 +107,11 @@ This tutorial shows you how to consume a [Pyth price](https://www.pyth.network/p
     }
     ```
 
-**what to know**
-- Programs don't do HTTP. They read accounts that the client provides.
-- `price`, `conf`, and `expo` are integers; display is `price * 10^expo` (and `conf * 10^expo`) **off-chain**.
-- The "post + use" pattern guarantees the exact update your program used (atomic transaction).
+> **Note**:
+> 
+>- Programs don't do HTTP. They read accounts that the client provides.
+>- `price`, `conf`, and `expo` are integers; display is `price * 10^expo` (and `conf * 10^expo`) **off-chain**.
+>- The "post + use" pattern guarantees the exact update your program used (atomic transaction).
 
 ## Build and deploy to devnet
 
