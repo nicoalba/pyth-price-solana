@@ -4,6 +4,7 @@ This tutorial shows you how to consume a [Pyth price](https://www.pyth.network/p
 
 - [Use Pyth price feeds in an Anchor program](#use-pyth-price-feeds-in-an-anchor-program)
   - [Prerequisites](#prerequisites)
+    - [Get your feed ID](#get-your-feed-id)
   - [Set up the project scaffold](#set-up-the-project-scaffold)
   - [Write the onchain program](#write-the-onchain-program)
   - [Build and deploy to devnet](#build-and-deploy-to-devnet)
@@ -19,7 +20,7 @@ This tutorial shows you how to consume a [Pyth price](https://www.pyth.network/p
 - A devnet RPC URL (e.g., a QuickNode endpoint) and a funded devnet keypair
 - The feed ID (hex) for the asset you want (e.g., ETH/USD)
   
-To get your feed ID:
+### Get your feed ID
 
 1. Open [Pyth Insights: Price Feeds](https://insights.pyth.network/price-feeds).
 2. Search for your asset.
