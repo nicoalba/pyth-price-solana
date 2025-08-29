@@ -47,7 +47,7 @@ For more info, see [How to fFetch price updates](https://docs.pyth.network/price
     # pythnet-sdk = "~2.1"
     ```
 
-3. Set your program id consistently (replace with yours):
+3. Set your program ID consistently (replace with yours):
 
    - In `programs/pyth-demo/src/lib.rs`: `declare_id!("...");`
    - In `Anchor.toml`:
@@ -69,10 +69,10 @@ For more info, see [How to fFetch price updates](https://docs.pyth.network/price
     use anchor_lang::prelude::*;
     use pyth_solana_receiver_sdk::price_update::{ get_feed_id_from_hex, PriceUpdateV2 };
 
-    declare_id!("11111111111111111111111111111111"); // replace with your program id
+    declare_id!("11111111111111111111111111111111"); // replace with your program ID
 
     const MAX_AGE_SECS: u64 = 60;                    // freshness threshold
-    const FEED_ID_HEX: &str = "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace";   // e.g., ETH/USD feed id (hex)
+    const FEED_ID_HEX: &str = "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace";   // e.g., ETH/USD feed ID (hex)
     const MAX_CONF_RATIO_BPS: u64 = 200;             // 2% conf/price cap (optional)
 
     #[program]
@@ -111,7 +111,7 @@ For more info, see [How to fFetch price updates](https://docs.pyth.network/price
 
     #[error_code]
     pub enum ErrorCode {
-        #[msg("invalid feed id")] BadFeedId,
+        #[msg("invalid feed ID")] BadFeedId,
         #[msg("price was zero")] ZeroPrice,
         #[msg("price confidence too wide")] WideConfidence,
     }
@@ -154,7 +154,7 @@ For more info, see [How to fFetch price updates](https://docs.pyth.network/price
     ```bash
     export SOLANA_RPC_URL="https://<your-devnet-rpc>"   # e.g., your QuickNode devnet URL
     export PROGRAM_ID="<your-program-id>"               # from `anchor deploy`
-    export PYTH_FEED_ID_HEX="0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace"     # the same feed id you set in FEED_ID_HEX
+    export PYTH_FEED_ID_HEX="0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace"     # the same feed ID you set in FEED_ID_HEX
     export PAYER_KEYPAIR="~/.config/solana/id.json"     # path to your devnet keypair
     ```
 
@@ -235,10 +235,10 @@ For more info, see [How to fFetch price updates](https://docs.pyth.network/price
    
 ## Troubleshooting
 
-- **Program id mismatch**: keep `declare_id!`, `Anchor.toml`, and `target/deploy/*.json` in sync.
+- **Program ID mismatch**: keep `declare_id!`, `Anchor.toml`, and `target/deploy/*.json` in sync.
 - **Stale price**: fetch just before sending; adjust `MAX_AGE_SECS` if needed.
 - **Version friction**: pin the receiver/sdk versions as shown above.
 
 ## Use a price feed account instead (optional)
 
-If you always want the latest price without posting an update each time, you can pass a *price feed account* (a stable address derived from *feed id + shard*) directly to your instruction. You still enforce freshness and confidence; an offchain writer must keep that feed account updated. This guide focuses on the *price update account* flow because it is explicit and easy to reproduce on devnet.
+If you always want the latest price without posting an update each time, you can pass a *price feed account* (a stable address derived from *feed ID + shard*) directly to your instruction. You still enforce freshness and confidence; an offchain writer must keep that feed account updated. This guide focuses on the *price update account* flow because it is explicit and easy to reproduce on devnet.
