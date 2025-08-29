@@ -5,7 +5,7 @@ This tutorial shows you how to consume a [Pyth price](https://www.pyth.network/p
 - [Use Pyth price feeds in an Anchor program](#use-pyth-price-feeds-in-an-anchor-program)
   - [Prerequisites](#prerequisites)
   - [Set up the project scaffold](#set-up-the-project-scaffold)
-  - [Write the on-chain program](#write-the-on-chain-program)
+  - [Write the onchain program](#write-the-onchain-program)
   - [Build and deploy to devnet](#build-and-deploy-to-devnet)
   - [Run the client (post + use)](#run-the-client-post--use)
   - [Troubleshooting](#troubleshooting)
@@ -61,7 +61,7 @@ For more info, see [How to fFetch price updates](https://docs.pyth.network/price
       wallet = "~/.config/solana/id.json"
       ```
 
-## Write the on-chain program
+## Write the onchain program
 
 1. Create `programs/pyth-demo/src/lib.rs`:
 
@@ -97,7 +97,7 @@ For more info, see [How to fFetch price updates](https://docs.pyth.network/price
                 require!(conf_ratio_bps <= MAX_CONF_RATIO_BPS as u128, ErrorCode::WideConfidence);
             }
 
-            // Log raw integers for off-chain display (scale by 10^expo off-chain)
+            // Log raw integers for offchain display (scale by 10^expo offchain)
             msg!("price={}, conf={}, expo={}, t={}", p.price, p.conf, p.expo, p.publish_time);
             Ok(())
         }
@@ -120,7 +120,7 @@ For more info, see [How to fFetch price updates](https://docs.pyth.network/price
 > **Note**:
 > 
 >- Programs don't do HTTP. They read accounts that the client provides.
->- `price`, `conf`, and `expo` are integers; display is `price * 10^expo` (and `conf * 10^expo`) **off-chain**.
+>- `price`, `conf`, and `expo` are integers; display is `price * 10^expo` (and `conf * 10^expo`) offchain.
 >- The "post + use" pattern guarantees the exact update your program used (atomic transaction).
 
 ## Build and deploy to devnet
@@ -187,7 +187,7 @@ For more info, see [How to fFetch price updates](https://docs.pyth.network/price
       const idl = JSON.parse(fs.readFileSync(idlPath, "utf8")) as Idl;
       const program = new Program(idl, programId, provider);
 
-      // --- 1) fetch signed update off-chain (Hermes) ---
+      // --- 1) fetch signed update offchain (Hermes) ---
       const hermes = new HermesClient("https://hermes.pyth.network");
       const updates = await hermes.getLatestPriceUpdates([feedIdHex]);
       if (!updates.length) throw new Error("No price updates");
@@ -231,7 +231,7 @@ For more info, see [How to fFetch price updates](https://docs.pyth.network/price
     price=5854321000, conf=120000, expo=-8, t=1699999999
     ```
 
-    Off-chain display: `5854321000 * 10^-8 = 58.54321000` (confidence `0.00120000`).
+    Fffchain display: `5854321000 * 10^-8 = 58.54321000` (confidence `0.00120000`).
    
 ## Troubleshooting
 
@@ -241,4 +241,4 @@ For more info, see [How to fFetch price updates](https://docs.pyth.network/price
 
 ## Use a price feed account instead (optional)
 
-If you always want the latest price without posting an update each time, you can pass a *price feed account* (a stable address derived from *feed id + shard*) directly to your instruction. You still enforce freshness and confidence; an off-chain writer must keep that feed account updated. This guide focuses on the *price update account* flow because it is explicit and easy to reproduce on devnet.
+If you always want the latest price without posting an update each time, you can pass a *price feed account* (a stable address derived from *feed id + shard*) directly to your instruction. You still enforce freshness and confidence; an offchain writer must keep that feed account updated. This guide focuses on the *price update account* flow because it is explicit and easy to reproduce on devnet.
