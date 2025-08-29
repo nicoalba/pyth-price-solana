@@ -13,10 +13,11 @@ This tutorial shows you how to consume a [Pyth price](https://www.pyth.network/p
 
 ## Prerequisites
 
-- Rust, Solana CLI, and Anchor installed (Anchor ≥ 0.29 recommended)
+- Solana CLI version compatible with your Anchor release ([see dependencies below](#set-up-the-project-scaffold)).
+- Rust and Anchor installed (Anchor ≥ 0.29 recommended)
 - Node 18+ and npm (for the client script)
 - A devnet RPC URL (e.g., a QuickNode endpoint) and a funded devnet keypair
-- The feed ID (hex) for the asset you want (e.g., ETH/USD). 
+- The feed ID (hex) for the asset you want (e.g., ETH/USD)
   
 To get your feed ID:
 
