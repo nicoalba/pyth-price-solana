@@ -1,41 +1,65 @@
 # Use Pyth price feeds in an Anchor program
 
-This tutorial shows you how to consume a [Pyth price](https://www.pyth.network/price-feeds) inside a Solana program written with Anchor. We use the [Pyth Solana Receiver](https://crates.io/crates/pyth-solana-receiver-sdk) *price update account* flow: the client posts a fresh, signed price update and, in the same transaction, calls your program, which verifies and reads that update.
+Pyth is a first-party price oracle that aggregates trusted, low-latency quotes from top exchanges/market-makers and publishes onchain price feeds for a variety of asset classes, each with a price and confidence interval.
+
+This tutorial shows you how to consume a [Pyth price](https://www.pyth.network/price-feeds) inside a Solana program written with Anchor. We use the [Pyth Solana Receiver](https://crates.io/crates/pyth-solana-receiver-sdk) *price update account* flow. In this flow, the client posts a fresh, signed price update and, in the same transaction, calls your program, which verifies and reads that update. For price feed accounts, see [Other methods](#other-methods).
 
 - [Use Pyth price feeds in an Anchor program](#use-pyth-price-feeds-in-an-anchor-program)
   - [Prerequisites](#prerequisites)
-    - [Get your feed ID](#get-your-feed-id)
+    - [Version checks](#version-checks)
+    - [Get your Pyth feed ID](#get-your-pyth-feed-id)
   - [Set up the project scaffold](#set-up-the-project-scaffold)
   - [Write the onchain program](#write-the-onchain-program)
   - [Build and deploy to devnet](#build-and-deploy-to-devnet)
   - [Run the client (post + use)](#run-the-client-post--use)
   - [Troubleshooting](#troubleshooting)
-  - [Use a price feed account instead (optional)](#use-a-price-feed-account-instead-optional)
+  - [Troubleshooting](#troubleshooting-1)
+  - [Other methods](#other-methods)
+    - [Use a price feed account](#use-a-price-feed-account)
 
 ## Prerequisites
 
-- Solana CLI version compatible with your Anchor release ([see dependencies below](#set-up-the-project-scaffold)).
-- Rust and Anchor installed (Anchor ≥ 0.29 recommended)
+>**Note**: 
+>- If you're new to Solana or Anchor, review our [Solana fundamentals](https://www.quicknode.com/guides/solana-development/getting-started/solana-fundamentals-reference-guide) and [Intro to Anchor](https://www.quicknode.com/guides/solana-development/anchor/how-to-write-your-first-anchor-program-in-solana-part-1) guides.
+>
+>We also have [a tutorial](https://www.quicknode.com/guides/solana-development/3rd-party-integrations/pyth-price-feeds) for Pyth price feeds using the [Solana Playground (web-based IDE)](https://beta.solpg.io/) for a zero-install experience, but fast-moving SDK/toolchain changes can cause version mismatches. This guide uses a local Anchor workspace for reproducibility.
+
+- Solana CLI (Agave) v2.x
+- Rust toolchain via rustup: `rustup`, `rustc`, and `cargo`
+- Anchor CLI 0.31.x
 - Node 18+ and npm (for the client script)
 - A devnet RPC URL (e.g., a QuickNode endpoint) and a funded devnet keypair
-- The feed ID (hex) for the asset you want (e.g., ETH/USD)
+- The Pyth feed ID (64-char hex for the asset you want, e.g., ETH/USD).
+
+### Version checks
+
+Run these commands to ensure you're up to date:
+
+```bash
+solana --version
+rustc --version
+anchor --version 
+cargo --version
+rustup show active-toolchain
+node --version 
+npm --version
+```
   
-### Get your feed ID
+### Get your Pyth feed ID
 
 1. Open [Pyth Insights: Price Feeds](https://insights.pyth.network/price-feeds).
 2. Search for your asset.
-3. Copy the Price Feed ID shown.
+3. Copy the Price Feed ID.
   
     For example, the feed ID for ETH/USD (used in this tutorial) is: `0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace`
 
-For more info, see [How to fFetch price updates](https://docs.pyth.network/price-feeds/fetch-price-updates) on Pyth docs.
-
 ## Set up the project scaffold
 
-1. Create a new Anchor workspace (or add to an existing one):
+1. Create a new Anchor workspace (or add to an existing one), then `cd` into it:
     
     ```bash
-    anchor new pyth-demo
+    # Creates an Anchor workspace with TypeScript test and npm as the package manager
+    anchor init pyth-demo --package-manager npm
     cd pyth-demo
     ```
 
@@ -43,25 +67,67 @@ For more info, see [How to fFetch price updates](https://docs.pyth.network/price
 
     ```toml
     [dependencies]
-    anchor-lang = "0.29"
-    pyth-solana-receiver-sdk = "0.6"
-    # If you hit version friction with Solana crates, you can pin:
-    # pythnet-sdk = "~2.1"
+    anchor-lang = "0.31.1"
+    pyth-solana-receiver-sdk = "0.6.1"
     ```
 
-3. Set your program ID consistently (replace with yours):
+    Do *not* add `solana-program` manually; Anchor pins the right version for you.
 
-   - In `programs/pyth-demo/src/lib.rs`: `declare_id!("...");`
-   - In `Anchor.toml`:
-      
-      ```toml
-      [programs.devnet]
-      pyth_demo = "<YOUR_PROGRAM_ID>"
+3. Set your program ID:
 
-      [provider]
-      cluster = "devnet"
-      wallet = "~/.config/solana/id.json"
-      ```
+    A program ID is your program's onchain address (pubkey) derived from: `target/deploy/pyth_demo-keypair.json`. It must match in *both*:
+    
+    - `programs/pyth-demo/src/lib.rs` -> `declare_id!("...");`
+    - `Anchor.toml` -> `[programs.devnet] pyth_demo = "..."`
+
+    1. Build once to create the keypair/artifacts:
+        
+        ```bash
+        anchor build
+        ```
+
+    2. (Optional) Show the program ID:
+
+        ```bash
+        solana-keygen pubkey target/deploy/pyth_demo-keypair.json
+        ```
+    
+    3. Sync the ID into lib.rs and Anchor.toml automatically:
+
+        ```bash
+        anchor keys sync
+        ```
+
+    4. Ensure you have a provider block pointing at devnet (adds it only if missing):
+  
+        ```bash
+        grep -q '^\[provider\]' Anchor.toml || cat >>Anchor.toml <<'EOF'
+
+        [provider]
+        cluster = "devnet"
+        wallet = "~/.config/solana/id.json"
+        EOF
+        ```
+
+Quick sanity checks
+
+- Confirm `declare_id!` line in your program: 
+
+  ```bash
+  grep -n 'declare_id!' programs/pyth-demo/src/lib.rs
+  ```
+
+- Confirm the devnet entry in `Anchor.toml`:
+
+  ```bash
+  awk '/^\[programs\.devnet\]/{f=1;next}/^\[/{f=0}f && /pyth_demo/ {print}' Anchor.toml
+  ```
+
+If you ever see "declared program ID does not match…", rebuild to regenerate artifacts, then resync IDs: 
+
+```bash
+anchor build && anchor keys sync
+```
 
 ## Write the onchain program
 
@@ -233,14 +299,25 @@ For more info, see [How to fFetch price updates](https://docs.pyth.network/price
     price=5854321000, conf=120000, expo=-8, t=1699999999
     ```
 
-    Fffchain display: `5854321000 * 10^-8 = 58.54321000` (confidence `0.00120000`).
+    Offchain display: `5854321000 * 10^-8 = 58.54321000` (confidence `0.00120000`).
    
 ## Troubleshooting
 
-- **Program ID mismatch**: keep `declare_id!`, `Anchor.toml`, and `target/deploy/*.json` in sync.
-- **Stale price**: fetch just before sending; adjust `MAX_AGE_SECS` if needed.
-- **Version friction**: pin the receiver/sdk versions as shown above.
+- **Program ID mismatch**: Keep `declare_id!`, `Anchor.toml`, and `target/deploy/*.json` in sync.
+- **Stale price**: Fetch just before sending; adjust `MAX_AGE_SECS` if needed.
+- **Version friction**: Pin the receiver/sdk versions as shown above.
 
-## Use a price feed account instead (optional)
+## Troubleshooting
+
+Encountering issues? Here are common problems and solutions:
+
+- **Program ID mismatch**: Ensure `declare_id!` in `lib.rs`, `Anchor.toml`, and `target/deploy/pyth_demo.json` match. Run `anchor build` and check `target/deploy/`.
+- **Stale price errors**: If `get_price_no_older_than` fails, verify Hermes returns fresh data. Increase `MAX_AGE_SECS` (e.g., to 120) for devnet latency. Use QuickNode’s low-latency RPC: [QuickNode Devnet Endpoint](https://www.quicknode.com/endpoints).
+- **Dependency Conflicts**: If `cargo build` fails, run `cargo tree -i solana-program` to check for version mismatches. Pin `pythnet-sdk = "~2.1"` if needed.
+- **Hermes Failures**: If no price updates are returned, retry after 1-2 seconds or use `https://hermes-beta.pyth.network`. Check QuickNode’s log dashboard for RPC errors: [QuickNode Logs](https://www.quicknode.com/docs/solana/logs).
+
+## Other methods
+
+### Use a price feed account
 
 If you always want the latest price without posting an update each time, you can pass a *price feed account* (a stable address derived from *feed ID + shard*) directly to your instruction. You still enforce freshness and confidence; an offchain writer must keep that feed account updated. This guide focuses on the *price update account* flow because it is explicit and easy to reproduce on devnet.
