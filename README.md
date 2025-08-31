@@ -6,6 +6,7 @@ This tutorial shows you how to consume a [Pyth price](https://www.pyth.network/p
 
 - [Use Pyth price feeds in an Anchor program](#use-pyth-price-feeds-in-an-anchor-program)
   - [Prerequisites](#prerequisites)
+    - [Get a QuickNode endpoint](#get-a-quicknode-endpoint)
     - [Version checks](#version-checks)
     - [Get your Pyth feed ID](#get-your-pyth-feed-id)
   - [Set up the project scaffold](#set-up-the-project-scaffold)
@@ -30,6 +31,15 @@ This tutorial shows you how to consume a [Pyth price](https://www.pyth.network/p
 - Node 18+ and npm (for the client script)
 - A devnet RPC URL (e.g., a QuickNode endpoint) and a funded devnet keypair
 - The Pyth feed ID (64-char hex for the asset you want, e.g., ETH/USD).
+- Devnet RPC URL and a funded devnet keypair (Recommended: QuickNode)
+
+### Get a QuickNode endpoint
+
+In your QuickNode dashboard:
+
+1. Go to **Endpoints** → **+ New Endpoint**.
+2. Select **Blockchain: Solana** → **Network: Devnet** → **Create**.
+3. Copy the HTTP Provider URL.
 
 ### Version checks
 
@@ -69,65 +79,84 @@ npm --version
     [dependencies]
     anchor-lang = "0.31.1"
     pyth-solana-receiver-sdk = "0.6.1"
+
+    # TEMP pin: SBF toolchain can't compile base64ct ≥ 1.8 (Rust 2024).
+    base64ct = "=1.7.3"   # remove once the SBF toolchain ships rustc ≥ 1.85
     ```
 
     Do *not* add `solana-program` manually; Anchor pins the right version for you.
 
-3. Set your program ID:
+3. Target devnet in `Anchor.toml`:
+    
+    1. If your `[provider]` block says `cluster = "localnet"`, switch it to devnet with this command:
+
+        ```bash
+        sed -i 's/^cluster = "localnet"/cluster = "devnet"/' Anchor.toml || true
+        ```
+
+    2. Point your Solana CLI at your [QuickNode devnet URL](#get-a-quicknode-endpoint):
+
+        ```bash
+        solana config set --url https://<insert-your-quicknode-devnet-url>
+        ```
+
+4. Lock toolchain and confirm PATH (prevents version mismatch errors):
+
+    1. Update `anchor.toml`
+
+        ```toml
+        [toolchain]
+        anchor_version = "0.31.1"
+        solana_version = "2.3.8"   # Agave (known-good)
+        package_manager = "npm"
+        ```
+    
+    2. Verify versions:
+
+        ```bash
+        solana --version   # expect 2.3.x
+        anchor --version   # expect 0.31.1
+        ```
+
+        If these match, move on to Step 5. If they don't, see [Troubleshooting → Toolchain/PATH mismatch](#troubleshooting).
+
+5. Set your program ID:
 
     A program ID is your program's onchain address (pubkey) derived from: `target/deploy/pyth_demo-keypair.json`. It must match in *both*:
     
     - `programs/pyth-demo/src/lib.rs` -> `declare_id!("...");`
     - `Anchor.toml` -> `[programs.devnet] pyth_demo = "..."`
 
-    1. Build once to create the keypair/artifacts:
+    1. Build once to create the deploy artifacts:
         
         ```bash
         anchor build
         ```
 
-    2. (Optional) Show the program ID:
+    2. Get your Program ID (pubkey derived from the generated keypair):
 
         ```bash
-        solana-keygen pubkey target/deploy/pyth_demo-keypair.json
+        solana address -k target/deploy/pyth_demo-keypair.json
         ```
     
-    3. Sync the ID into lib.rs and Anchor.toml automatically:
+    3. Set the ID in `programs/pyth-demo/src/lib.rs` manually:
+
+        ```rust
+        // programs/pyth-demo/src/lib.rs
+        declare_id!("PASTE_THE_PUBKEY_YOU_JUST_PRINTED");
+        ```
+
+    4. Set the ID in `Anchor.toml` automatically:
 
         ```bash
         anchor keys sync
         ```
+    5. Rebuilt and confirm:
 
-    4. Ensure you have a provider block pointing at devnet (adds it only if missing):
-  
         ```bash
-        grep -q '^\[provider\]' Anchor.toml || cat >>Anchor.toml <<'EOF'
-
-        [provider]
-        cluster = "devnet"
-        wallet = "~/.config/solana/id.json"
-        EOF
+        anchor build
+        anchor keys list   # confirm pyth_demo on devnet matches declare_id! and the keypair pubkey
         ```
-
-Quick sanity checks
-
-- Confirm `declare_id!` line in your program: 
-
-  ```bash
-  grep -n 'declare_id!' programs/pyth-demo/src/lib.rs
-  ```
-
-- Confirm the devnet entry in `Anchor.toml`:
-
-  ```bash
-  awk '/^\[programs\.devnet\]/{f=1;next}/^\[/{f=0}f && /pyth_demo/ {print}' Anchor.toml
-  ```
-
-If you ever see "declared program ID does not match…", rebuild to regenerate artifacts, then resync IDs: 
-
-```bash
-anchor build && anchor keys sync
-```
 
 ## Write the onchain program
 
@@ -310,6 +339,26 @@ anchor build && anchor keys sync
 ## Troubleshooting
 
 Encountering issues? Here are common problems and solutions:
+
+- **Edition 2024 / base64ct error**: After pinning `base64ct = "=1.7.3"` in `programs/pyth-demo/Cargo.toml`, force the lockfile to respect it: `cargo update -p base64ct --precise 1.7.3 && anchor build`; if it still fails, reset and rebuild: `rm -f Cargo.lock && anchor build`; verify with `cargo tree -i base64ct` (should show 1.7.3). Remove the pin once the SBF toolchain ships rustc ≥ 1.85.
+- **Toolchain/PATH mismatch**: If `solana --version` isn’t 2.3.x or `anchor --version` isn’t 0.31.1, your shell isn't picking up Solana'’'s active release. Fix for bash:
+  - Fix for bash:
+    
+    ```bash
+    export PATH="$HOME/.local/share/solana/install/active_release/bin:$PATH"
+    grep -qxF 'export PATH="$HOME/.local/share/solana/install/active_release/bin:$PATH"' ~/.bashrc || \
+    echo 'export PATH="$HOME/.local/share/solana/install/active_release/bin:$PATH"' >> ~/.bashrc
+    exec bash -l
+    ```
+
+    Then re-check with `solana --version` and `anchor --version`.
+
+  - If Anchor is still off, align it with:
+
+    ```bash
+    npm i -g @coral-xyz/anchor-cli@0.31.1
+    anchor --version
+    ```
 
 - **Program ID mismatch**: Ensure `declare_id!` in `lib.rs`, `Anchor.toml`, and `target/deploy/pyth_demo.json` match. Run `anchor build` and check `target/deploy/`.
 - **Stale price errors**: If `get_price_no_older_than` fails, verify Hermes returns fresh data. Increase `MAX_AGE_SECS` (e.g., to 120) for devnet latency. Use QuickNode’s low-latency RPC: [QuickNode Devnet Endpoint](https://www.quicknode.com/endpoints).

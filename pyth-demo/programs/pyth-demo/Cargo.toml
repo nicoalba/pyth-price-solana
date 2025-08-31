@@ -16,7 +16,7 @@ no-idl = []
 no-log-ix-name = []
 idl-build = ["anchor-lang/idl-build"]
 
-
 [dependencies]
 anchor-lang = "0.31.1"
 pyth-solana-receiver-sdk = "0.6.1"
+base64ct = "=1.7.3"   # keep for now until SBF rustc ≥ 1.85
