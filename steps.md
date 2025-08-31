@@ -46,7 +46,7 @@ Types of checks:
 7. Display offchain: the client converts price using expo to a human-readable value and prints it (presentation stays off-chain).
 
 
-## Architecture and explanation
+## Transaction flow and explanation
 
 ```mermaid
 sequenceDiagram

@@ -4,7 +4,7 @@ Pyth is a first-party price oracle that publishes onchain price feeds with a pri
 
 - [Use Pyth price feeds in an Anchor program](#use-pyth-price-feeds-in-an-anchor-program)
   - [What you'll do](#what-youll-do)
-    - [Tutorial workflow](#tutorial-workflow)
+    - [Transaction flow](#transaction-flow)
   - [Prerequisites](#prerequisites)
     - [Get a QuickNode endpoint](#get-a-quicknode-endpoint)
     - [Version checks](#version-checks)
@@ -27,7 +27,7 @@ Pyth is a first-party price oracle that publishes onchain price feeds with a pri
 
 For reading persistent price feed accounts, see [Other methods](#other-methods).
 
-### Tutorial workflow
+### Transaction flow
 
 ```mermaid
 sequenceDiagram
