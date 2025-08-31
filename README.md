@@ -302,29 +302,64 @@ pub enum ErrorCode {
     ```bash
     mkdir -p client && cd client
     npm init -y
-    npm i -D typescript ts-node
-    npm i @solana/web3.js @coral-xyz/anchor @pythnetwork/hermes-client @pythnetwork/pyth-solana-receiver @pythnetwork/solana-utils
+    npm i @solana/web3.js@1.91.6 @coral-xyz/anchor@0.31.1 @pythnetwork/pyth-solana-receiver@0.11.0
+    npm i -D typescript@^5.4 @types/node@^20.11
     ```
 
     These commands:
+
     - Create a new folder at `pyth-demo/client`
-    - Creates and updates `client/pack.json` with dependencies
+    - Creates and updates `client/package.json` with dependencies
     - Generates `client/package-lock.json`
     - Populates `client/node_modules` with installed packages
 
     >**Note**:
-    >npm audit warnings: You may see "high severity" transitive issues (e.g., `bigint-buffer` via `@solana/web3.js`). For this demo client, you can proceed. Avoid `npm audit fix --force` as it may downgrade `@pythnetwork/solana-utils` and break the Pyth receiver client. Commit `package-lock.json` for reproducible installs.
+    >Node 18+ recommended. Avoid `npm audit fix --force` here (it can destabilize the Solana/Pyth stack).
 
-2. Set environment variables. Make sure to fill in your devnet URL, your program ID, and the Pyth feed ID:
+2. Create `client/tsconfig.json` with this code:
+
+    ```json
+    {
+      "compilerOptions": {
+        "target": "ES2022",
+        "module": "Node16",
+        "moduleResolution": "Node16",
+        "esModuleInterop": true,
+        "resolveJsonModule": true,
+        "outDir": "dist",
+        "strict": true,
+        "skipLibCheck": true
+      },
+      "include": ["**/*.ts"]
+    }
+    ```
+
+    This `tsconfig.json` defines a compile-first setup for Node16 to emit ES2022 JS to `dist/`, use Node16 module/resolution, and enable CJS/ESM/JSON interop so you avoid common "import/module" errors.
+
+3. Ensure `client/package.json` has these keys for the build/run scripts, and an override that avoids websocket issues:
+
+    ```json
+    {
+      "scripts": {
+        "build": "tsc -p tsconfig.json",
+        "post-and-use": "node dist/client-post-and-use.js"
+      },
+      "overrides": {
+        "rpc-websockets": "7.10.0"
+      }
+    }
+    ```
+
+4. Set environment variables. Make sure to fill in your devnet URL, your program ID, and the Pyth feed ID:
 
     ```bash
     export SOLANA_RPC_URL="https://<your-devnet-rpc>"   # e.g., your QuickNode devnet URL
     export PROGRAM_ID="<your-program-id>"               # from `anchor deploy`
-    export PYTH_FEED_ID_HEX="0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace"     # the same feed ID you set in FEED_ID_HEX
+    export PYTH_FEED_ID_HEX="0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace"     # the same feed ID you set in PYTH_FEED_ID_HEX
     export PAYER_KEYPAIR="$HOME/.config/solana/id.json" # path to your devnet keypair
     ```
 
-3. Create `client-post-and-use.ts` with this minimal script:
+5. Create `client-post-and-use.ts` with this code:
 
     ```ts
     // client/client-post-and-use.ts
@@ -511,13 +546,13 @@ pub enum ErrorCode {
     });
     ```
 
-    This code uses your env vars + IDL to:
+    This code uses your env vars to:
 
     - Fetch a signed Pyth price update from Hermes (offchain)
     - Post that update on devnet via the Pyth Receiver program
     - Call your Anchor program (`read_price`) in the same transaction
 
-4. Build & run the client (prints on-chain logs):
+6. Build, then run the client (which prints onchain logs):
 
     ```bash
     cd client
@@ -525,7 +560,7 @@ pub enum ErrorCode {
     npm run post-and-use
     ```
 
-    Expected results example:
+    Example output:
 
     ```makefile
     tx: <SIG1>
@@ -552,40 +587,56 @@ pub enum ErrorCode {
 
 Encountering issues? Here are common problems and solutions:
 
-- **Edition 2024 / base64ct error**: After pinning `base64ct = "=1.7.3"` in `programs/pyth-demo/Cargo.toml`, force the lockfile to respect it: `cargo update -p base64ct --precise 1.7.3 && anchor build`; if it still fails, reset and rebuild: `rm -f Cargo.lock && anchor build`; verify with `cargo tree -i base64ct` (should show 1.7.3). Remove the pin once the SBF toolchain ships rustc ≥ 1.85.
-- **Toolchain/PATH mismatch**: If `solana --version` isn’t 2.3.x or `anchor --version` isn’t 0.31.1, your shell isn't picking up Solana'’'s active release. Fix for bash:
-  - Fix for bash:
-    
-    ```bash
-    export PATH="$HOME/.local/share/solana/install/active_release/bin:$PATH"
-    grep -qxF 'export PATH="$HOME/.local/share/solana/install/active_release/bin:$PATH"' ~/.bashrc || \
-    echo 'export PATH="$HOME/.local/share/solana/install/active_release/bin:$PATH"' >> ~/.bashrc
-    exec bash -l
-    ```
+- **Edition 2024 / base64ct error**: Pin `base64ct` and rebuild; verify `1.7.3` is used:
 
-    Then re-check with `solana --version` and `anchor --version`.
+  ```bash
+  # In programs/pyth-demo/Cargo.toml add:
+  # base64ct = "=1.7.3"
+  rm -f Cargo.lock
+  cargo update -p base64ct --precise 1.7.3
+  anchor build
+  cargo tree -i base64ct | grep 1.7.3
+  ```
 
-  - If Anchor is still off, align it with:
+  Remove the pin once the SBF toolchain ships rustc ≥ 1.85.
 
-    ```bash
-    npm i -g @coral-xyz/anchor-cli@0.31.1
-    anchor --version
-    ```
+- **Toolchain / PATH mismatch** - Ensure your shell uses Solana's active release and Anchor 0.31.1:
 
-- **Solana v2 vs v3 mismatch**: Anchor 0.31.x targets Solana v2 crates. If any `solana-* 3.x` appears in your graph, you'll get type conflicts (`__Pubkey`, duplicate `borsh`). Keep deps minimal (don't add `solana-program`/`bors`h directly) and force v2 in the lockfile:
+  ```bash
+  export PATH="$HOME/.local/share/solana/install/active_release/bin:$PATH"
+  solana --version    # expect 2.x (Agave)
+  anchor --version    # expect 0.31.1
+  npm i -g @coral-xyz/anchor-cli@0.31.1
+  exec bash -l        # start a fresh shell if needed
+  ```
+
+- **Solana v2 vs v3 mismatch (borsh/__Pubkey errors)** - Anchor 0.31.x targets Solana v2 crates. If any `solana-* 3.x` appears, force v2.
   
   ```bash
   cargo tree -i solana-program | grep 'solana-program v' | sort -u
   for c in solana-program solana-pubkey solana-message solana-instruction; do
     cargo update -p $c --precise 2.3.0 || true
   done
-  rm -f Cargo.lock && anchor build   # only if it's still tangled
+  rm -f Cargo.lock && anchor build
   ```
 
-- **Program ID mismatch**: Ensure `declare_id!` in `lib.rs`, `Anchor.toml`, and `target/deploy/pyth_demo.json` match. Run `anchor build` and check `target/deploy/`.
-- **Stale price errors**: If `get_price_no_older_than` fails, verify Hermes returns fresh data. Increase `MAX_AGE_SECS` (e.g., to 120) for devnet latency. Use QuickNode’s low-latency RPC: [QuickNode Devnet Endpoint](https://www.quicknode.com/endpoints).
-- **Dependency Conflicts**: If `cargo build` fails, run `cargo tree -i solana-program` to check for version mismatches. Pin `pythnet-sdk = "~2.1"` if needed.
-- **Hermes Failures**: If no price updates are returned, retry after 1-2 seconds or use `https://hermes-beta.pyth.network`. Check QuickNode’s log dashboard for RPC errors: [QuickNode Logs](https://www.quicknode.com/docs/solana/logs).
+- **Program ID mismatch** - The same address must appear in all three:
+
+  - `declare_id!()` in `programs/pyth-demo/src/lib.rs`
+  - `[programs.devnet]` in `Anchor.toml`
+  - Derived from `target/deploy/pyth_demo-keypair.json` (`solana address -k ...`)
+
+  ```bash
+  anchor keys sync
+  anchor build
+  ```
+
+- **Stale price / Hermes freshness**- Fetch Hermes *immediately* before posting (the client does this). Sanity-check updates:
+
+  ```bash
+  curl -s "https://hermes.pyth.network/v2/updates/price/latest?chain=solana&cluster=devnet&encoding=base64&ids=<FEED_ID>" | jq .binary.data
+  ```
+  If your onchain check enforces age, relax for devnet (e.g., `MAX_AGE_SECS=120`) or rerun the client to get a fresh update.
 
 ## Other methods
 
