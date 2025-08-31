@@ -171,9 +171,9 @@ use pyth_solana_receiver_sdk::price_update::{ get_feed_id_from_hex, PriceUpdateV
 
 declare_id!("11111111111111111111111111111111"); // replace with your program ID
 
-const MAX_AGE_SECS: u64 = 60;                    // freshness threshold
-const FEED_ID_HEX: &str = "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace";   // e.g., ETH/USD feed ID (hex)
-const MAX_CONF_RATIO_BPS: u64 = 200;             // 2% conf/price cap (optional)
+const MAX_AGE_SECS: u64 = 60; // freshness threshold
+const FEED_ID_HEX: &str = "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace"; // e.g., ETH/USD feed ID (hex)
+const MAX_CONF_RATIO_BPS: u64 = 200; // 2% conf/price cap (optional)
 
 #[program]
 pub mod pyth_demo {
@@ -191,14 +191,25 @@ pub mod pyth_demo {
 
         // Optional confidence bound: reject overly-uncertain prints
         require!(p.price != 0, ErrorCode::ZeroPrice);
-        let abs_price = p.price.unsigned_abs() as u128;
+        let abs_price: u128 = p.price.unsigned_abs() as u128;
         if abs_price > 0 {
-            let conf_ratio_bps = (p.conf.saturating_mul(10_000)) / abs_price;
-            require!(conf_ratio_bps <= MAX_CONF_RATIO_BPS as u128, ErrorCode::WideConfidence);
+            // do math in u128 to avoid u64/u128 divide errors
+            let conf_ratio_bps: u128 = (u128::from(p.conf) * 10_000) / abs_price;
+            require!(
+                conf_ratio_bps <= u128::from(MAX_CONF_RATIO_BPS),
+                ErrorCode::WideConfidence
+            );
         }
 
-        // Log raw integers for offchain display (scale by 10^expo offchain)
-        msg!("price={}, conf={}, expo={}, t={}", p.price, p.conf, p.expo, p.publish_time);
+        // Log raw integers for offchain display (scale by 10^exponent offchain)
+        msg!(
+            "price={}, conf={}, exponent={}, t={}",
+            p.price,
+            p.conf,
+            p.exponent,
+            p.publish_time
+        );
+
         Ok(())
     }
 }
@@ -211,9 +222,12 @@ pub struct ReadPrice<'info> {
 
 #[error_code]
 pub enum ErrorCode {
-    #[msg("invalid feed ID")] BadFeedId,
-    #[msg("price was zero")] ZeroPrice,
-    #[msg("price confidence too wide")] WideConfidence,
+    #[msg("invalid feed ID")]
+    BadFeedId,
+    #[msg("price was zero")]
+    ZeroPrice,
+    #[msg("price confidence too wide")]
+    WideConfidence,
 }
 ```
 
@@ -221,7 +235,7 @@ pub enum ErrorCode {
 
 - No HTTP on-chain: Your client fetches a Pyth update and posts it via the Receiver program; your program reads that `price_update` account.
 - Fresh + correct feed: `get_price_no_older_than` checks `MAX_AGE_SECS` and `FEED_ID_HEX`, then returns `price`, `conf`, `expo`, `publish_time` (all integers).
-- Display math: `display_price = price * 10^expo`, `display_conf = conf * 10^expo` (e.g., `5854321000` with `expo=-8` → `58.54321000`).
+- Display math: `display_price = price * 10^exponent`, `display_conf = conf * 10^exponent` (e.g., `5854321000` with `exponent = -8` → `58.54321000`).
 - Guards: `MAX_AGE_SECS` enforces freshness; `MAX_CONF_RATIO_BPS` (2% by default) rejects overly wide confidence.
 - Atomic flow: The client posts the update and calls `read_price` in the same transaction, guaranteeing you read exactly what you just posted.
 
@@ -233,7 +247,39 @@ pub enum ErrorCode {
   solana config set --url https://<your-devnet-rpc>
   ```
 
-2. Run build and deploy:
+2. Fund your devnet wallet:
+
+    1. Set the wallet path:
+
+    ```bash
+    WALLET="$HOME/.config/solana/id.json"
+    ```
+
+    2. Create the wallet (if it doesn't exist):
+  
+    ```bash
+    [ -f "$WALLET" ] || solana-keygen new -o "$WALLET"
+    ```
+
+    3. Show the address to check that it worked:
+
+    ```bash
+    solana address -k "$WALLET"
+    ```
+
+    4. Airdrop 3 SOL from the public devnet faucet:
+
+    ```bash
+    solana airdrop 3 -u devnet "$WALLET"
+    ```
+
+    5. Verify the balance:
+
+    ```bash
+    solana balance -u devnet "$WALLET"
+    ```
+
+3. Run build and deploy:
 
     ```bash
     anchor build
