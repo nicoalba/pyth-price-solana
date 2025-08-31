@@ -11,6 +11,7 @@ This tutorial shows you how to consume a [Pyth price](https://www.pyth.network/p
     - [Get your Pyth feed ID](#get-your-pyth-feed-id)
   - [1. Set up the project scaffold](#1-set-up-the-project-scaffold)
   - [2. Write the onchain program](#2-write-the-onchain-program)
+    - [Code explanation](#code-explanation)
   - [3. Build and deploy to devnet](#3-build-and-deploy-to-devnet)
   - [4. Run the client (post + use)](#4-run-the-client-post--use)
   - [Troubleshooting](#troubleshooting)
@@ -141,7 +142,7 @@ npm --version
         solana address -k target/deploy/pyth_demo-keypair.json
         ```
     
-    3. Set the ID in `programs/pyth-demo/src/lib.rs` manually:
+    3. Ensure the ID is set in `programs/pyth-demo/src/lib.rs` manually:
 
         ```rust
         // programs/pyth-demo/src/lib.rs
@@ -153,74 +154,76 @@ npm --version
         ```bash
         anchor keys sync
         ```
-    5. Rebuilt and confirm:
+    5. Rebuild and confirm the pubkey:
 
         ```bash
         anchor build
-        anchor keys list   # confirm pyth_demo on devnet matches declare_id! and the keypair pubkey
+        anchor keys list 
         ```
 
 ## 2. Write the onchain program
 
-1. Create `programs/pyth-demo/src/lib.rs`:
+Replace the content in `programs/pyth-demo/src/lib.rs` with this code. Don't forget to insert your program ID:
 
-    ```rust
-    use anchor_lang::prelude::*;
-    use pyth_solana_receiver_sdk::price_update::{ get_feed_id_from_hex, PriceUpdateV2 };
+```rust
+use anchor_lang::prelude::*;
+use pyth_solana_receiver_sdk::price_update::{ get_feed_id_from_hex, PriceUpdateV2 };
 
-    declare_id!("11111111111111111111111111111111"); // replace with your program ID
+declare_id!("11111111111111111111111111111111"); // replace with your program ID
 
-    const MAX_AGE_SECS: u64 = 60;                    // freshness threshold
-    const FEED_ID_HEX: &str = "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace";   // e.g., ETH/USD feed ID (hex)
-    const MAX_CONF_RATIO_BPS: u64 = 200;             // 2% conf/price cap (optional)
+const MAX_AGE_SECS: u64 = 60;                    // freshness threshold
+const FEED_ID_HEX: &str = "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace";   // e.g., ETH/USD feed ID (hex)
+const MAX_CONF_RATIO_BPS: u64 = 200;             // 2% conf/price cap (optional)
 
-    #[program]
-    pub mod pyth_demo {
-        use super::*;
+#[program]
+pub mod pyth_demo {
+    use super::*;
 
-        pub fn read_price(ctx: Context<ReadPrice>) -> Result<()> {
-            // Verify we are reading the intended asset
-            let feed_id = get_feed_id_from_hex(FEED_ID_HEX)
-                .map_err(|_| error!(ErrorCode::BadFeedId))?;
+    pub fn read_price(ctx: Context<ReadPrice>) -> Result<()> {
+        // Verify we are reading the intended asset
+        let feed_id = get_feed_id_from_hex(FEED_ID_HEX)
+            .map_err(|_| error!(ErrorCode::BadFeedId))?;
 
-            // Enforce freshness and load the latest observation for that feed
-            let p = ctx.accounts.price_update.get_price_no_older_than(
-                &Clock::get()?, MAX_AGE_SECS, &feed_id
-            )?;
+        // Enforce freshness and load the latest observation for that feed
+        let p = ctx.accounts.price_update.get_price_no_older_than(
+            &Clock::get()?, MAX_AGE_SECS, &feed_id
+        )?;
 
-            // Optional confidence bound: reject overly-uncertain prints
-            require!(p.price != 0, ErrorCode::ZeroPrice);
-            let abs_price = p.price.unsigned_abs() as u128;
-            if abs_price > 0 {
-                let conf_ratio_bps = (p.conf.saturating_mul(10_000)) / abs_price;
-                require!(conf_ratio_bps <= MAX_CONF_RATIO_BPS as u128, ErrorCode::WideConfidence);
-            }
-
-            // Log raw integers for offchain display (scale by 10^expo offchain)
-            msg!("price={}, conf={}, expo={}, t={}", p.price, p.conf, p.expo, p.publish_time);
-            Ok(())
+        // Optional confidence bound: reject overly-uncertain prints
+        require!(p.price != 0, ErrorCode::ZeroPrice);
+        let abs_price = p.price.unsigned_abs() as u128;
+        if abs_price > 0 {
+            let conf_ratio_bps = (p.conf.saturating_mul(10_000)) / abs_price;
+            require!(conf_ratio_bps <= MAX_CONF_RATIO_BPS as u128, ErrorCode::WideConfidence);
         }
-    }
 
-    #[derive(Accounts)]
-    pub struct ReadPrice<'info> {
-        /// CHECK: Receiver SDK validates that this is a PriceUpdateV2 account
-        pub price_update: Account<'info, PriceUpdateV2>,
+        // Log raw integers for offchain display (scale by 10^expo offchain)
+        msg!("price={}, conf={}, expo={}, t={}", p.price, p.conf, p.expo, p.publish_time);
+        Ok(())
     }
+}
 
-    #[error_code]
-    pub enum ErrorCode {
-        #[msg("invalid feed ID")] BadFeedId,
-        #[msg("price was zero")] ZeroPrice,
-        #[msg("price confidence too wide")] WideConfidence,
-    }
-    ```
+#[derive(Accounts)]
+pub struct ReadPrice<'info> {
+    /// CHECK: Receiver SDK validates that this is a PriceUpdateV2 account
+    pub price_update: Account<'info, PriceUpdateV2>,
+}
 
-> **Note**:
-> 
->- Programs don't do HTTP. They read accounts that the client provides.
->- `price`, `conf`, and `expo` are integers; display is `price * 10^expo` (and `conf * 10^expo`) offchain.
->- The "post + use" pattern guarantees the exact update your program used (atomic transaction).
+#[error_code]
+pub enum ErrorCode {
+    #[msg("invalid feed ID")] BadFeedId,
+    #[msg("price was zero")] ZeroPrice,
+    #[msg("price confidence too wide")] WideConfidence,
+}
+```
+
+### Code explanation
+
+- No HTTP on-chain: Your client fetches a Pyth update and posts it via the Receiver program; your program reads that `price_update` account.
+- Fresh + correct feed: `get_price_no_older_than` checks `MAX_AGE_SECS` and `FEED_ID_HEX`, then returns `price`, `conf`, `expo`, `publish_time` (all integers).
+- Display math: `display_price = price * 10^expo`, `display_conf = conf * 10^expo` (e.g., `5854321000` with `expo=-8` → `58.54321000`).
+- Guards: `MAX_AGE_SECS` enforces freshness; `MAX_CONF_RATIO_BPS` (2% by default) rejects overly wide confidence.
+- Atomic flow: The client posts the update and calls `read_price` in the same transaction, guaranteeing you read exactly what you just posted.
 
 ## 3. Build and deploy to devnet
 
@@ -355,6 +358,16 @@ Encountering issues? Here are common problems and solutions:
     npm i -g @coral-xyz/anchor-cli@0.31.1
     anchor --version
     ```
+
+- **Solana v2 vs v3 mismatch**: Anchor 0.31.x targets Solana v2 crates. If any `solana-* 3.x` appears in your graph, you'll get type conflicts (`__Pubkey`, duplicate `borsh`). Keep deps minimal (don't add `solana-program`/`bors`h directly) and force v2 in the lockfile:
+  
+  ```bash
+  cargo tree -i solana-program | grep 'solana-program v' | sort -u
+  for c in solana-program solana-pubkey solana-message solana-instruction; do
+    cargo update -p $c --precise 2.3.0 || true
+  done
+  rm -f Cargo.lock && anchor build   # only if it's still tangled
+  ```
 
 - **Program ID mismatch**: Ensure `declare_id!` in `lib.rs`, `Anchor.toml`, and `target/deploy/pyth_demo.json` match. Run `anchor build` and check `target/deploy/`.
 - **Stale price errors**: If `get_price_no_older_than` fails, verify Hermes returns fresh data. Increase `MAX_AGE_SECS` (e.g., to 120) for devnet latency. Use QuickNode’s low-latency RPC: [QuickNode Devnet Endpoint](https://www.quicknode.com/endpoints).
