@@ -242,42 +242,42 @@ pub enum ErrorCode {
 ## 3. Build and deploy to devnet
 
 1. Point Solana at your devnet RPC:
-
-  ```bash
-  solana config set --url https://<your-devnet-rpc>
-  ```
+  
+    ```bash
+    solana config set --url https://<your-devnet-rpc>
+    ```
 
 2. Fund your devnet wallet:
 
     1. Set the wallet path:
-
-    ```bash
-    WALLET="$HOME/.config/solana/id.json"
-    ```
+        
+        ```bash
+        WALLET="$HOME/.config/solana/id.json"
+        ```
 
     2. Create the wallet (if it doesn't exist):
   
-    ```bash
-    [ -f "$WALLET" ] || solana-keygen new -o "$WALLET"
-    ```
+        ```bash
+        [ -f "$WALLET" ] || solana-keygen new -o "$WALLET"
+        ```
 
     3. Show the address to check that it worked:
 
-    ```bash
-    solana address -k "$WALLET"
-    ```
+        ```bash
+        solana address -k "$WALLET"
+        ```
 
     4. Airdrop 3 SOL from the public devnet faucet:
 
-    ```bash
-    solana airdrop 3 -u devnet "$WALLET"
-    ```
+        ```bash
+        solana airdrop 3 -u devnet "$WALLET"
+        ```
 
     5. Verify the balance:
 
-    ```bash
-    solana balance -u devnet "$WALLET"
-    ```
+        ```bash
+        solana balance -u devnet "$WALLET"
+        ```
 
 3. Run build and deploy:
 
