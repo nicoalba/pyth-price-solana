@@ -13,6 +13,7 @@ Pyth is a first-party price oracle that publishes onchain price feeds with a pri
     - [Code explanation](#code-explanation)
   - [3. Build and deploy to devnet](#3-build-and-deploy-to-devnet)
   - [4. Run the client (post + use)](#4-run-the-client-post--use)
+  - [Conclusion and next steps](#conclusion-and-next-steps)
   - [Troubleshooting](#troubleshooting)
   - [Other methods](#other-methods)
     - [Use a price feed account](#use-a-price-feed-account)
@@ -22,6 +23,15 @@ Pyth is a first-party price oracle that publishes onchain price feeds with a pri
 - **Scaffold, write, and deploy** an Anchor program on devnet that logs `price/conf/exponent/timestamp`.
 - **Build a compile-first TS client** that fetches from Hermes, **posts via Pyth Receiver**, and calls your program **in one transaction**.
 - **Test and verify** by inspecting transaction logs and printing a human-readable price.
+
+```mermaid
+sequenceDiagram
+  Client->>Hermes: Fetch update
+  Hermes-->>Client: Signed data
+  Client->>Receiver: Post PriceUpdateV2
+  Client->>Program: Call read_price
+  Program-->>Logs: Price output
+```
 
 For reading persistent price feed accounts, see [Other methods](#other-methods).
 
@@ -587,8 +597,18 @@ pub enum ErrorCode {
     - Seeing 1–2 transaction (`tx:`) lines is normal (post + use).
     - The line with `price=…, conf=…, exponent=…, t=…` is your program's `read_price` output.
     - Display math: `display_price = price * 10^exponent` (same for `conf`).
+    - The price of ETH/USD is $4,467.67.
 
-    Congrats! The price of ETH/USD is $4,467.67, with a confidence level of 0.03%. You have successfully used Pyth price feeds in an anchor program.
+## Conclusion and next steps
+
+You built and deployed an Anchor program that *verifies and reads a Pyth price update* posted by your client in the *same transaction*, then logged `price/conf/exponent/timestamp` and printed a human-readable price. This mirrors a production pattern: *fetch signed updates from Hermes → post via Pyth Receiver → consume on-chain*.
+
+What to do next:
+
+- Swap `PYTH_FEED_ID_HEX` for other assets (or multiple feeds).
+- Enforce freshness (`MAX_AGE_SECS`) and a confidence threshold before using the price.
+- Persist readings in an account or wire them into program logic (e.g., limits, liquidations).
+- Explore the alternative *price feed account* method or an IDL-based client.
 
 ## Troubleshooting
 
