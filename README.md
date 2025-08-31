@@ -14,7 +14,6 @@ This tutorial shows you how to consume a [Pyth price](https://www.pyth.network/p
   - [Build and deploy to devnet](#build-and-deploy-to-devnet)
   - [Run the client (post + use)](#run-the-client-post--use)
   - [Troubleshooting](#troubleshooting)
-  - [Troubleshooting](#troubleshooting-1)
   - [Other methods](#other-methods)
     - [Use a price feed account](#use-a-price-feed-account)
 
@@ -332,12 +331,6 @@ npm --version
     ```
 
     Offchain display: `5854321000 * 10^-8 = 58.54321000` (confidence `0.00120000`).
-   
-## Troubleshooting
-
-- **Program ID mismatch**: Keep `declare_id!`, `Anchor.toml`, and `target/deploy/*.json` in sync.
-- **Stale price**: Fetch just before sending; adjust `MAX_AGE_SECS` if needed.
-- **Version friction**: Pin the receiver/sdk versions as shown above.
 
 ## Troubleshooting
 
