@@ -29,21 +29,17 @@ sequenceDiagram
   autonumber
   participant Client
   participant Hermes
-  participant Receiver as Pyth Receiver (program)
-  participant PriceUpdate as PriceUpdateV2 account
-  participant Program as Your Anchor program
+  participant Receiver as Pyth Receiver
+  participant Program
 
-  Note over Client,Program: Single transaction: post + use
+  Note over Client,Program: One transaction: post + use
 
-  Client->>Hermes: GET /v2/updates/price/latest (base64)
+  Client->>Hermes: Fetch latest update (base64)
   Hermes-->>Client: Signed update(s)
-  Client->>Receiver: Post update (InitEncodedVaa/WriteEncodedVaa)
-  Receiver-->>PriceUpdate: Create/verify PriceUpdateV2
-  Client->>Program: read_price(price_update = PriceUpdate)
-  Program-->>Program: Verify & read (price/conf/exponent/t)
-  Program-->>Client: Logs / human-readable price
-  Receiver-->>PriceUpdate: (optional) Close & reclaim rent
-
+  Client->>Receiver: Post update
+  Note over Receiver: Creates/validates PriceUpdateV2
+  Client->>Program: read_price(PriceUpdateV2)
+  Program-->>Client: Logs price/conf/exponent/t
 ```
 
 For reading persistent price feed accounts, see [Other methods](#other-methods).
