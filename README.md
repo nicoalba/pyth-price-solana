@@ -21,9 +21,11 @@ This tutorial shows you how to consume a [Pyth price](https://www.pyth.network/p
 ## Prerequisites
 
 >**Note**: 
->- If you're new to Solana or Anchor, review our [Solana fundamentals](https://www.quicknode.com/guides/solana-development/getting-started/solana-fundamentals-reference-guide) and [Intro to Anchor](https://www.quicknode.com/guides/solana-development/anchor/how-to-write-your-first-anchor-program-in-solana-part-1) guides.
+- >If you're new to Solana or Anchor, review our [Solana fundamentals](https://www.quicknode.com/guides/solana-development/getting-started/solana-fundamentals-reference-guide) and [Intro to Anchor](https://www.quicknode.com/guides/solana-development/anchor/how-to-write-your-first-anchor-program-in-solana-part-1) guides.
 >
->We also have [a tutorial](https://www.quicknode.com/guides/solana-development/3rd-party-integrations/pyth-price-feeds) for Pyth price feeds using the [Solana Playground (web-based IDE)](https://beta.solpg.io/) for a zero-install experience, but fast-moving SDK/toolchain changes can cause version mismatches. This guide uses a local Anchor workspace for reproducibility.
+- We have [a tutorial](https://www.quicknode.com/guides/solana-development/3rd-party-integrations/pyth-price-feeds) for Pyth price feeds using the [Solana Playground (web-based IDE)](https://beta.solpg.io/) for a zero-install experience, but fast-moving SDK/toolchain changes can cause version mismatches. This guide uses a local Anchor workspace for reproducibility.
+
+Before you begin, ensure you have:
 
 - Solana CLI (Agave) v2.x
 - Rust toolchain via rustup: `rustup`, `rustc`, and `cargo`
@@ -39,7 +41,9 @@ In your QuickNode dashboard:
 
 1. Go to **Endpoints** → **+ New Endpoint**.
 2. Select **Blockchain: Solana** → **Network: Devnet** → **Create**.
-3. Copy the HTTP Provider URL.
+3. Copy the HTTP provider URL.
+
+    ![QuickNode endpoint](pyth-demo/images/quicknode-endpoint.png)
 
 ### Version checks
 
