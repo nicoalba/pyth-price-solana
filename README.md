@@ -247,7 +247,16 @@ pub enum ErrorCode {
     solana config set --url https://<your-devnet-rpc>
     ```
 
-2. Fund your devnet wallet:
+2. In `Anchor.toml`, add these to your `[toolchain]` block:
+
+    ```toml
+    [toolchain]
+    anchor_version = "0.31.1"
+    solana_version = "2.3.8"
+    package_manager = "npm"
+    ```
+
+3. Fund your devnet wallet:
 
     1. Set the wallet path:
         
@@ -279,7 +288,7 @@ pub enum ErrorCode {
         solana balance -u devnet "$WALLET"
         ```
 
-3. Run build and deploy:
+4. Run build and deploy:
 
     ```bash
     anchor build
@@ -297,89 +306,247 @@ pub enum ErrorCode {
     npm i @solana/web3.js @coral-xyz/anchor @pythnetwork/hermes-client @pythnetwork/pyth-solana-receiver @pythnetwork/solana-utils
     ```
 
-2. Set environment variables (example):
+    These commands:
+    - Create a new folder at `pyth-demo/client`
+    - Creates and updates `client/pack.json` with dependencies
+    - Generates `client/package-lock.json`
+    - Populates `client/node_modules` with installed packages
+
+    >**Note**:
+    >npm audit warnings: You may see "high severity" transitive issues (e.g., `bigint-buffer` via `@solana/web3.js`). For this demo client, you can proceed. Avoid `npm audit fix --force` as it may downgrade `@pythnetwork/solana-utils` and break the Pyth receiver client. Commit `package-lock.json` for reproducible installs.
+
+2. Set environment variables. Make sure to fill in your devnet URL, your program ID, and the Pyth feed ID:
 
     ```bash
     export SOLANA_RPC_URL="https://<your-devnet-rpc>"   # e.g., your QuickNode devnet URL
     export PROGRAM_ID="<your-program-id>"               # from `anchor deploy`
     export PYTH_FEED_ID_HEX="0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace"     # the same feed ID you set in FEED_ID_HEX
-    export PAYER_KEYPAIR="~/.config/solana/id.json"     # path to your devnet keypair
+    export PAYER_KEYPAIR="$HOME/.config/solana/id.json" # path to your devnet keypair
     ```
 
 3. Create `client-post-and-use.ts` with this minimal script:
 
     ```ts
-    // client-post-and-use.ts
-    // Minimal client: fetch Pyth update → post via Receiver → call your program in the same txn.
-    import fs from "fs";
-    import path from "path";
-    import { Connection, Keypair, PublicKey } from "@solana/web3.js";
-    import { AnchorProvider, Wallet, Program, Idl } from "@coral-xyz/anchor";
-    import { HermesClient } from "@pythnetwork/hermes-client";
+    // client/client-post-and-use.ts
+    // Fetch Pyth update (HTTP) → post via Receiver → call your program (manual Anchor ix) → print on-chain logs + human-readable price.
+
+    import * as fs from "fs";
+    import * as path from "path";
+    import {
+      Connection,
+      Keypair,
+      PublicKey,
+      VersionedTransaction,
+      Signer,
+      TransactionInstruction,
+    } from "@solana/web3.js";
+    import { AnchorProvider, Wallet } from "@coral-xyz/anchor";
     import { PythSolanaReceiver } from "@pythnetwork/pyth-solana-receiver";
-    import { sendTransactions } from "@pythnetwork/solana-utils";
+    import { createHash } from "crypto";
+
+    function requireEnv(name: string): string {
+      const v = process.env[name];
+      if (!v) throw new Error(`Missing env var: ${name}`);
+      return v;
+    }
+
+    // Anchor discriminator: first 8 bytes of sha256("global:<method>")
+    function anchorSighashGlobal(name: string): Buffer {
+      const h = createHash("sha256").update(`global:${name}`).digest();
+      return h.subarray(0, 8);
+    }
+
+    // Hermes v2 (with legacy fallback) → return base64 updates (string[])
+    async function fetchPythUpdates(feedIdHex: string): Promise<string[]> {
+      const base = process.env.HERMES_URL ?? "https://hermes.pyth.network";
+
+      // v2 endpoint first
+      let url = new URL("/v2/updates/price/latest", base);
+      url.searchParams.set("ids[]", feedIdHex);
+      url.searchParams.set("encoding", "base64");
+      url.searchParams.set("chain", "solana");
+      url.searchParams.set("cluster", "devnet");
+
+      let res = await fetch(url.toString());
+      if (res.status === 404) {
+        // legacy fallback
+        url = new URL("/api/latest_price_updates", base);
+        url.searchParams.set("ids[]", feedIdHex);
+        url.searchParams.set("parsed", "false");
+        res = await fetch(url.toString());
+      }
+      if (!res.ok) throw new Error(`Hermes HTTP ${res.status}`);
+
+      const body: any = await res.json();
+      if (body?.binary?.data && Array.isArray(body.binary.data)) return body.binary.data;
+      if (body?.data?.binary?.data && Array.isArray(body.data.binary.data)) return body.data.binary.data;
+      if (Array.isArray(body?.updates) && body.updates[0]?.binary?.data) return body.updates[0].binary.data;
+      if (Array.isArray(body) && body[0]?.binary?.data) return body[0].binary.data;
+      if (Array.isArray(body?.updates) && typeof body.updates[0] === "string") return body.updates as string[];
+
+      throw new Error("Hermes response missing base64 updates (binary.data)");
+    }
+
+    // helpers to pretty-print integers scaled by 10^exponent
+    function formatScaled(intStr: string, exponent: number): string {
+      let sign = "";
+      if (intStr.startsWith("-")) {
+        sign = "-";
+        intStr = intStr.slice(1);
+      }
+      if (exponent >= 0) return sign + intStr + "0".repeat(exponent);
+      const places = -exponent;
+      if (intStr.length <= places) {
+        return sign + "0." + "0".repeat(places - intStr.length) + intStr;
+      }
+      const split = intStr.length - places;
+      return sign + intStr.slice(0, split) + "." + intStr.slice(split);
+    }
+
+    function bpsToPercent(confStr: string, priceStr: string): string {
+      try {
+        const conf = BigInt(confStr);
+        const priceAbs = (priceStr.startsWith("-") ? BigInt(priceStr.slice(1)) : BigInt(priceStr)) || 1n;
+        const bps = (conf * 10_000n) / priceAbs;
+        // show to two decimals
+        const whole = bps / 100n;
+        const frac = (bps % 100n).toString().padStart(2, "0");
+        return `${whole}.${frac}%`;
+      } catch {
+        return "~";
+      }
+    }
+
+    // Print logs and a human-readable price line if present
+    async function printProgramLogs(connection: Connection, sig: string, label = "ETH/USD") {
+      const tx = await connection.getTransaction(sig, {
+        commitment: "confirmed",
+        maxSupportedTransactionVersion: 0,
+      });
+      const logs = tx?.meta?.logMessages ?? [];
+      for (const line of logs) {
+        if (line.startsWith("Program log:")) console.log(line);
+      }
+
+      // Try to parse: price=..., conf=..., exponent=..., t=...
+      const priceLine = logs.find((l) => l.includes("price=") && l.includes("exponent="));
+      if (priceLine) {
+        const m = priceLine.match(/price=(-?\d+), conf=(\d+), (?:expo|exponent)=(-?\d+), t=(\d+)/);
+        if (m) {
+          const [, priceI, confI, expoI, tSec] = m;
+          const displayPrice = formatScaled(priceI, parseInt(expoI, 10));
+          const displayConf  = formatScaled(confI,  parseInt(expoI, 10));
+          const confPct = bpsToPercent(confI, priceI);
+          const when = new Date(Number(tSec) * 1000).toISOString();
+          console.log(`Display ${label}: ${displayPrice} (±${displayConf}, ~${confPct}) @ ${when}`);
+        }
+      }
+    }
 
     async function main() {
       // --- env ---
-      const rpc = process.env.SOLANA_RPC_URL!;
-      const programId = new PublicKey(process.env.PROGRAM_ID!);
-      const feedIdHex = process.env.PYTH_FEED_ID_HEX!;
-      const keypath = process.env.PAYER_KEYPAIR ?? path.join(process.env.HOME!, ".config/solana/id.json");
-      const idlBase = process.env.PROGRAM_IDL_BASENAME ?? "pyth_demo"; // ../target/idl/<name>.json
-      const idlPath = path.join(__dirname, `../target/idl/${idlBase}.json`);
+      const rpc = requireEnv("SOLANA_RPC_URL");
+      const programId = new PublicKey(requireEnv("PROGRAM_ID"));
+      const feedIdHex = requireEnv("PYTH_FEED_ID_HEX");
+      const keypath =
+        process.env.PAYER_KEYPAIR ?? path.join(process.env.HOME || "", ".config/solana/id.json");
 
-      // --- setup (connection, wallet, program) ---
-      const payer = Keypair.fromSecretKey(Uint8Array.from(JSON.parse(fs.readFileSync(keypath, "utf8"))));
+      // --- setup ---
+      const payer = Keypair.fromSecretKey(
+        Uint8Array.from(JSON.parse(fs.readFileSync(keypath, "utf8")))
+      );
       const connection = new Connection(rpc, "confirmed");
       const provider = new AnchorProvider(connection, new Wallet(payer), {});
-      const idl = JSON.parse(fs.readFileSync(idlPath, "utf8")) as Idl;
-      const program = new Program(idl, programId, provider);
 
-      // --- 1) fetch signed update offchain (Hermes) ---
-      const hermes = new HermesClient("https://hermes.pyth.network");
-      const updates = await hermes.getLatestPriceUpdates([feedIdHex]);
-      if (!updates.length) throw new Error("No price updates");
-      const signedUpdate = updates[0];
+      // --- 1) fetch signed update (Hermes over HTTP) ---
+      const priceUpdateData = await fetchPythUpdates(feedIdHex);
+      if (priceUpdateData.length === 0) throw new Error("No price updates from Hermes");
 
       // --- 2) one transaction: post update → call your program ---
-      const receiver = new PythSolanaReceiver({ connection, wallet: provider.wallet });
+      const receiver = new PythSolanaReceiver({ connection, wallet: provider.wallet as any });
       const txb = receiver.newTransactionBuilder({ closeUpdateAccounts: true });
-      await txb.addPostPriceUpdates(signedUpdate); // A) post (creates temp price_update account)
-      await txb.addPriceConsumerInstructions(async (getPriceUpdateAccount) => {
-        const priceUpdatePk = getPriceUpdateAccount(feedIdHex);
-        const ix = await program.methods.readPrice().accounts({ priceUpdate: priceUpdatePk }).instruction();
-        return [{ instruction: ix, signers: [] }]; // B) use (your Anchor instruction)
-      });
 
-      // --- 3) send ---
-      const txs = await txb.buildVersionedTransactions({});
-      await sendTransactions(txs, connection, provider.wallet);
-      console.log("posted + used Pyth update in one transaction");
+      // A) post (creates temp PriceUpdateV2 account)
+      await txb.addPostPriceUpdates(priceUpdateData);
+
+      // B) use (manual Anchor instruction for read_price())
+      await txb.addPriceConsumerInstructions(
+        async (getPriceUpdateAccount: (feedId: string) => PublicKey) => {
+          const priceUpdatePk = getPriceUpdateAccount(feedIdHex);
+
+          // read_price has no args → data = 8-byte discriminator only
+          const data = anchorSighashGlobal("read_price");
+
+          const ix = new TransactionInstruction({
+            programId,
+            keys: [{ pubkey: priceUpdatePk, isSigner: false, isWritable: false }],
+            data,
+          });
+
+          return [{ instruction: ix, signers: [] }];
+        }
+      );
+
+      // --- 3) build, sign, send, confirm + print logs + human-readable price ---
+      const built: { tx: VersionedTransaction; signers: Signer[] }[] =
+        await txb.buildVersionedTransactions({});
+
+      for (const { tx, signers } of built) {
+        tx.sign([payer, ...(signers || [])]);
+        const sig = await connection.sendRawTransaction(tx.serialize(), {
+          skipPreflight: false,
+          maxRetries: 3,
+        });
+        await connection.confirmTransaction(sig, "confirmed");
+        console.log("tx:", sig);
+        await printProgramLogs(connection, sig, "ETH/USD");
+      }
+
+      console.log("Success: posted + used Pyth update in one transaction");
     }
 
-    main().catch((e) => { console.error(e); process.exit(1); });
-
+    main().catch((e) => {
+      console.error(e);
+      process.exit(1);
+    });
     ```
 
-4. Run the client:
+    This code uses your env vars + IDL to:
+
+    - Fetch a signed Pyth price update from Hermes (offchain)
+    - Post that update on devnet via the Pyth Receiver program
+    - Call your Anchor program (`read_price`) in the same transaction
+
+4. Build & run the client (prints on-chain logs):
 
     ```bash
-    npx ts-node client-post-and-use.ts
+    cd client
+    npm run build
+    npm run post-and-use
     ```
 
-5. Check logs:
+    Expected results example:
 
-    ```bash
-    solana logs -u devnet
+    ```makefile
+    tx: <SIG1>
+    Program log: Instruction: InitEncodedVaa
+    Program log: Instruction: WriteEncodedVaa
+    tx: <SIG2>
+    Program log: Instruction: VerifyEncodedVaaV1
+    Program log: Instruction: PostUpdate
+    Program log: Instruction: ReadPrice
+    Program log: price=445713929913, conf=188943660, exponent=-8, t=1756678099
+    Program log: Instruction: CloseEncodedVaa
+    Program log: Instruction: ReclaimRent
+    Display ETH/USD: 4467.67124072 (±1.70034250, ~0.03%) @ 2025-08-31T22:16:49.000Z
+    Success: posted + used Pyth update in one transaction
     ```
 
-    You should see a line like:
-    
-    ```
-    price=5854321000, conf=120000, expo=-8, t=1699999999
-    ```
+    - Seeing 1–2 transaction (`tx:`) lines is normal (post + use).
+    - The line with `price=…, conf=…, exponent=…, t=…` is your program's `read_price` output.
+    - Display math: `display_price = price * 10^exponent` (same for `conf`).
 
-    Offchain display: `5854321000 * 10^-8 = 58.54321000` (confidence `0.00120000`).
+    Congrats! The price of ETH/USD is $4,467.67, with a confidence level of 0.03%. You have successfully used Pyth price feeds in an anchor program.
 
 ## Troubleshooting
 

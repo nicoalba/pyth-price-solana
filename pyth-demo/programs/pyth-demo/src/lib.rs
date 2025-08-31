@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use pyth_solana_receiver_sdk::price_update::{ get_feed_id_from_hex, PriceUpdateV2 };
 
-declare_id!("11111111111111111111111111111111"); // replace with your program ID
+declare_id!("7DJXqHoma1rG9soqjMCyL1h9tGiDLJKHfbee3wTowthS"); // replace with your program ID
 
 const MAX_AGE_SECS: u64 = 60; // freshness threshold
 const FEED_ID_HEX: &str = "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace"; // e.g., ETH/USD feed ID (hex)

@@ -1,4 +1,6 @@
 [toolchain]
+anchor_version = "0.31.1"
+solana_version = "2.3.8"
 package_manager = "npm"
 
 [features]
@@ -6,6 +8,9 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
+pyth_demo = "7DJXqHoma1rG9soqjMCyL1h9tGiDLJKHfbee3wTowthS"
+
+[programs.devnet]
 pyth_demo = "7DJXqHoma1rG9soqjMCyL1h9tGiDLJKHfbee3wTowthS"
 
 [registry]
