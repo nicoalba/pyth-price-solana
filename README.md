@@ -26,11 +26,24 @@ Pyth is a first-party price oracle that publishes onchain price feeds with a pri
 
 ```mermaid
 sequenceDiagram
-  Client->>Hermes: Fetch update
-  Hermes-->>Client: Signed data
-  Client->>Receiver: Post PriceUpdateV2
-  Client->>Program: Call read_price
-  Program-->>Logs: Price output
+  autonumber
+  participant Client
+  participant Hermes
+  participant Receiver as Pyth Receiver (program)
+  participant PriceUpdate as PriceUpdateV2 account
+  participant Program as Your Anchor program
+
+  Note over Client,Program: Single transaction: post + use
+
+  Client->>Hermes: GET /v2/updates/price/latest (base64)
+  Hermes-->>Client: Signed update(s)
+  Client->>Receiver: Post update (InitEncodedVaa/WriteEncodedVaa)
+  Receiver-->>PriceUpdate: Create/verify PriceUpdateV2
+  Client->>Program: read_price(price_update = PriceUpdate)
+  Program-->>Program: Verify & read (price/conf/exponent/t)
+  Program-->>Client: Logs / human-readable price
+  Receiver-->>PriceUpdate: (optional) Close & reclaim rent
+
 ```
 
 For reading persistent price feed accounts, see [Other methods](#other-methods).
