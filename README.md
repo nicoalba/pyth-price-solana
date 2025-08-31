@@ -5,6 +5,7 @@ Pyth is a first-party price oracle that aggregates trusted, low-latency quotes f
 This tutorial shows you how to consume a [Pyth price](https://www.pyth.network/price-feeds) inside a Solana program written with Anchor. We use the [Pyth Solana Receiver](https://crates.io/crates/pyth-solana-receiver-sdk) *price update account* flow. In this flow, the client posts a fresh, signed price update and, in the same transaction, calls your program, which verifies and reads that update. For price feed accounts, see [Other methods](#other-methods).
 
 - [Use Pyth price feeds in an Anchor program](#use-pyth-price-feeds-in-an-anchor-program)
+  - [What you'll do](#what-youll-do)
   - [Prerequisites](#prerequisites)
     - [Get a QuickNode endpoint](#get-a-quicknode-endpoint)
     - [Version checks](#version-checks)
@@ -17,6 +18,12 @@ This tutorial shows you how to consume a [Pyth price](https://www.pyth.network/p
   - [Troubleshooting](#troubleshooting)
   - [Other methods](#other-methods)
     - [Use a price feed account](#use-a-price-feed-account)
+
+## What you'll do
+
+- Set up an Anchor program on devnet that reads a Pyth price update account and logs `price/conf/exponent/timestamp`.
+- Build a compile-first TypeScript client that fetches the latest price from Pyth Hermes, posts it onchain via Pyth Receiver, then calls your program in one transaction.
+- Verify by inspecting transaction logs and printing a human-readable price.
 
 ## Prerequisites
 
