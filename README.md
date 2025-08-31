@@ -1,8 +1,6 @@
 # Use Pyth price feeds in an Anchor program
 
-Pyth is a first-party price oracle that aggregates trusted, low-latency quotes from top exchanges/market-makers and publishes onchain price feeds for a variety of asset classes, each with a price and confidence interval.
-
-This tutorial shows you how to consume a [Pyth price](https://www.pyth.network/price-feeds) inside a Solana program written with Anchor. We use the [Pyth Solana Receiver](https://crates.io/crates/pyth-solana-receiver-sdk) *price update account* flow. In this flow, the client posts a fresh, signed price update and, in the same transaction, calls your program, which verifies and reads that update. For price feed accounts, see [Other methods](#other-methods).
+Pyth is a first-party price oracle that publishes onchain price feeds with a price and confidence interval. This end-to-end tutorial takes you from a blank repo to a working Anchor program on devnet that reads a Pyth price *update account* using the *Pyth Solana Receiver* flow. The client fetches a fresh signed update from Hermes, posts it, and in the *same transaction* calls your program to verify and read it.
 
 - [Use Pyth price feeds in an Anchor program](#use-pyth-price-feeds-in-an-anchor-program)
   - [What you'll do](#what-youll-do)
@@ -21,9 +19,11 @@ This tutorial shows you how to consume a [Pyth price](https://www.pyth.network/p
 
 ## What you'll do
 
-- Set up an Anchor program on devnet that reads a Pyth price update account and logs `price/conf/exponent/timestamp`.
-- Build a compile-first TypeScript client that fetches the latest price from Pyth Hermes, posts it onchain via Pyth Receiver, then calls your program in one transaction.
-- Verify by inspecting transaction logs and printing a human-readable price.
+- **Scaffold, write, and deploy** an Anchor program on devnet that logs `price/conf/exponent/timestamp`.
+- **Build a compile-first TS client** that fetches from Hermes, **posts via Pyth Receiver**, and calls your program **in one transaction**.
+- **Test and verify** by inspecting transaction logs and printing a human-readable price.
+
+For reading persistent price feed accounts, see [Other methods](#other-methods).
 
 ## Prerequisites
 
