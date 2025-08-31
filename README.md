@@ -4,6 +4,7 @@ Pyth is a first-party price oracle that publishes onchain price feeds with a pri
 
 - [Use Pyth price feeds in an Anchor program](#use-pyth-price-feeds-in-an-anchor-program)
   - [What you'll do](#what-youll-do)
+    - [Tutorial workflow](#tutorial-workflow)
   - [Prerequisites](#prerequisites)
     - [Get a QuickNode endpoint](#get-a-quicknode-endpoint)
     - [Version checks](#version-checks)
@@ -24,6 +25,10 @@ Pyth is a first-party price oracle that publishes onchain price feeds with a pri
 - **Build a compile-first TS client** that fetches from Hermes, **posts via Pyth Receiver**, and calls your program **in one transaction**.
 - **Test and verify** by inspecting transaction logs and printing a human-readable price.
 
+For reading persistent price feed accounts, see [Other methods](#other-methods).
+
+### Tutorial workflow
+
 ```mermaid
 sequenceDiagram
   autonumber
@@ -41,8 +46,6 @@ sequenceDiagram
   Client->>Program: read_price(PriceUpdateV2)
   Program-->>Client: Logs price/conf/exponent/t
 ```
-
-For reading persistent price feed accounts, see [Other methods](#other-methods).
 
 ## Prerequisites
 
