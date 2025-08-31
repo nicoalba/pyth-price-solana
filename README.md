@@ -9,10 +9,10 @@ This tutorial shows you how to consume a [Pyth price](https://www.pyth.network/p
     - [Get a QuickNode endpoint](#get-a-quicknode-endpoint)
     - [Version checks](#version-checks)
     - [Get your Pyth feed ID](#get-your-pyth-feed-id)
-  - [Set up the project scaffold](#set-up-the-project-scaffold)
-  - [Write the onchain program](#write-the-onchain-program)
-  - [Build and deploy to devnet](#build-and-deploy-to-devnet)
-  - [Run the client (post + use)](#run-the-client-post--use)
+  - [1. Set up the project scaffold](#1-set-up-the-project-scaffold)
+  - [2. Write the onchain program](#2-write-the-onchain-program)
+  - [3. Build and deploy to devnet](#3-build-and-deploy-to-devnet)
+  - [4. Run the client (post + use)](#4-run-the-client-post--use)
   - [Troubleshooting](#troubleshooting)
   - [Other methods](#other-methods)
     - [Use a price feed account](#use-a-price-feed-account)
@@ -65,7 +65,7 @@ npm --version
   
     For example, the feed ID for ETH/USD (used in this tutorial) is: `0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace`
 
-## Set up the project scaffold
+## 1. Set up the project scaffold
 
 1. Create a new Anchor workspace (or add to an existing one), then `cd` into it:
     
@@ -160,7 +160,7 @@ npm --version
         anchor keys list   # confirm pyth_demo on devnet matches declare_id! and the keypair pubkey
         ```
 
-## Write the onchain program
+## 2. Write the onchain program
 
 1. Create `programs/pyth-demo/src/lib.rs`:
 
@@ -222,7 +222,7 @@ npm --version
 >- `price`, `conf`, and `expo` are integers; display is `price * 10^expo` (and `conf * 10^expo`) offchain.
 >- The "post + use" pattern guarantees the exact update your program used (atomic transaction).
 
-## Build and deploy to devnet
+## 3. Build and deploy to devnet
 
 1. Point Solana at your devnet RPC:
 
@@ -237,7 +237,7 @@ npm --version
     anchor deploy --provider.cluster devnet
     ```
 
-## Run the client (post + use)
+## 4. Run the client (post + use)
 
 1. Create a client folder and install dependencies:
 
