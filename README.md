@@ -134,7 +134,14 @@ npm --version
         ```
 
 4. Update `anchor.toml` to lock the toolchain:
+4. Update `anchor.toml` to lock the toolchain:
 
+    ```toml
+    [toolchain]
+    anchor_version = "0.31.1"
+    solana_version = "2.3.8"
+    package_manager = "npm"
+    ```
     ```toml
     [toolchain]
     anchor_version = "0.31.1"
@@ -150,7 +157,7 @@ npm --version
 
     ```bash
     v3() { cargo tree | sed -nE "s/.*($1 v3\.[0-9]+\.[0-9]+).*/\1/p" | head -n1; }
-    
+
     x=$(v3 solana-program);            if [ -n "$x" ]; then cargo update -p "${x// v/@}" --precise 2.3.0; else cargo update -p solana-program            --precise 2.3.0; fi
     x=$(v3 solana-program-entrypoint); if [ -n "$x" ]; then cargo update -p "${x// v/@}" --precise 2.3.0; else cargo update -p solana-program-entrypoint --precise 2.3.0; fi
     x=$(v3 solana-instruction);        if [ -n "$x" ]; then cargo update -p "${x// v/@}" --precise 2.3.0; else cargo update -p solana-instruction        --precise 2.3.0; fi
@@ -347,10 +354,41 @@ The client fetches a signed Pyth price update, posts it via Pyth Receiver, then 
 >Node 18+ recommended. Avoid `npm audit fix --force` here (it can destabilize the Solana/Pyth stack).
 
 2. Update your `client/package.json` and pin rpc-websockets.
+2. Update your `client/package.json` and pin rpc-websockets.
 
+    This step replaces `client/package.json` with a known-good config with exact pinned versions plus the npm scripts to build/run with. It also pins `"rpc-websockets": "7.10.0"` via overrides to prevent export errrors.
     This step replaces `client/package.json` with a known-good config with exact pinned versions plus the npm scripts to build/run with. It also pins `"rpc-websockets": "7.10.0"` via overrides to prevent export errrors.
 
     ```bash
+    {
+      "name": "client",
+      "version": "1.0.0",
+      "private": true,
+      "type": "commonjs",
+      "scripts": {
+        "test": "tsc -p tsconfig.json --noEmit",
+        "build": "tsc -p tsconfig.json",
+        "post-and-use": "dotenv --override -e .env -- node dist/client-post-and-use.js"
+      },
+      "dependencies": {
+        "@coral-xyz/anchor": "0.31.1",
+        "@pythnetwork/pyth-solana-receiver": "0.11.0",
+        "@solana/web3.js": "1.91.6"
+      },
+      "devDependencies": {
+        "@types/node": "20.19.11",
+        "dotenv-cli": "10.0.0",
+        "typescript": "5.4.5"
+      },
+      "overrides": {
+        "rpc-websockets": "7.10.0"
+      }
+    }
+    ```
+
+    Then apply it with `npm install`.
+
+3. Create `client/tsconfig.json` with this code:
     {
       "name": "client",
       "version": "1.0.0",
@@ -400,6 +438,7 @@ The client fetches a signed Pyth price update, posts it via Pyth Receiver, then 
     This `tsconfig.json` defines a compile-first setup for Node16 to emit ES2022 JS to `dist/`, use Node16 module/resolution, and enable CJS/ESM/JSON interop so you avoid common "import/module" errors.
 
 4. Create the `.env` file. Make sure to fill in your devnet URL, your program ID, and the Pyth feed ID before you run. Run from inside `pyth-demo/client`:
+4. Create the `.env` file. Make sure to fill in your devnet URL, your program ID, and the Pyth feed ID before you run. Run from inside `pyth-demo/client`:
 
     1. Ensure dotenv CLI is available:
 
@@ -410,14 +449,22 @@ The client fetches a signed Pyth price update, posts it via Pyth Receiver, then 
     2. Create the `.env` file with your variables and save it to the `/client` folder.
 
         Ensure you insert your devnet URL, your program ID, your Pyth feed ID, and your keypair path:
-        
+
         ```bash
         SOLANA_RPC_URL=https://<your-devnet-rpc>
         PROGRAM_ID=<your-program-id>
         PYTH_FEED_ID_HEX=0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace
         KEYPAIR_PATH=/home/<you-username>/.config/solana/id.json
+        KEYPAIR_PATH=/home/<you-username>/.config/solana/id.json
         ```
 
+        If you don't know your username, run:
+
+       ```bash
+       solana config get | sed -n 's/^Keypair Path: //p'
+       ```
+
+5. Create `client-post-and-use.ts` with this code and save it in `/client`:
         If you don't know your username, run:
 
        ```bash
