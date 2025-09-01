@@ -20,16 +20,12 @@ This tutorial is inspired by the [Pyth Network documentation for Solana price fe
   - [5. Test the program](#5-test-the-program)
   - [6. Conclusion and next steps](#6-conclusion-and-next-steps)
   - [Troubleshooting](#troubleshooting)
-  - [Other methods](#other-methods)
-    - [Use a price feed account](#use-a-price-feed-account)
 
 ## What you'll do
 
 - **Scaffold, write, and deploy** an Anchor program on devnet that logs `price/conf/exponent/timestamp`.
 - **Build a compile-first TS client** that fetches from Hermes, **posts via Pyth Receiver**, and calls your program **in one transaction**.
 - **Test and verify** by inspecting transaction logs and printing a human-readable price.
-
-For reading persistent price feed accounts, see [Other methods](#other-methods).
 
 ### Transaction flow
 
@@ -266,7 +262,7 @@ pub enum ErrorCode {
 
 ### Program code explanation
 
-- No HTTP on-chain: Your client fetches a Pyth update and posts it via the Receiver program; your program reads that `price_update` account.
+- No HTTP onchain: Your client fetches a Pyth update and posts it via the Receiver program; your program reads that `price_update` account.
 - Fresh + correct feed: `get_price_no_older_than` checks `MAX_AGE_SECS` and `FEED_ID_HEX`, then returns `price`, `conf`, `expo`, `publish_time` (all integers).
 - Display math: `display_price = price * 10^exponent`, `display_conf = conf * 10^exponent` (e.g., `5854321000` with `exponent = -8` → `58.54321000`).
 - Guards: `MAX_AGE_SECS` enforces freshness; `MAX_CONF_RATIO_BPS` (2% by default) rejects overly wide confidence.
@@ -396,7 +392,7 @@ pub enum ErrorCode {
 
     ```ts
     // client/client-post-and-use.ts
-    // Fetch Pyth update (HTTP) → post via Receiver → call your program (manual Anchor ix) → print on-chain logs + human-readable price.
+    // Fetch Pyth update (HTTP) → post via Receiver → call your program (manual Anchor ix) → print onchain logs + human-readable price.
 
     import * as fs from "fs";
     import * as path from "path";
@@ -621,14 +617,15 @@ Success: posted + used Pyth update in one transaction
 
 ## 6. Conclusion and next steps
 
-You built and deployed an Anchor program that *verifies and reads a Pyth price update* posted by your client in the *same transaction*, then logged `price/conf/exponent/timestamp` and printed a human-readable price. This mirrors a production pattern: *fetch signed updates from Hermes → post via Pyth Receiver → consume on-chain*.
+You built and deployed an Anchor program that *verifies and reads a Pyth price update* posted by your client in the *same transaction*, then logged `price/conf/exponent/timestamp` and printed a human-readable price. This mirrors a production pattern: *fetch signed updates from Hermes → post via Pyth Receiver → consume onchain*.
 
 What can you do next?
 
 - Swap `PYTH_FEED_ID_HEX` for other assets (or multiple feeds).
 - Enforce freshness (`MAX_AGE_SECS`) and a confidence threshold before using the price.
 - Persist readings in an account or wire them into program logic (e.g., limits, liquidations).
-- Explore the alternative [price feed account](#other-methods) method.
+
+If you don't want to post a new signed Hermes update to the Pyth Receiver each time, read from the *price feed account* (a persistent account per feed ID). Pass it to your instruction and enforce freshness/confidence; an offchain writer keeps it updated. This guide uses the *price update account* flow because it's explicit and easy to reproduce on devnet.
 
 ## Troubleshooting
 
@@ -684,9 +681,3 @@ Encountering issues? Here are common problems and solutions:
   curl -s "https://hermes.pyth.network/v2/updates/price/latest?chain=solana&cluster=devnet&encoding=base64&ids=<FEED_ID>" | jq .binary.data
   ```
   If your onchain check enforces age, relax for devnet (e.g., `MAX_AGE_SECS=120`) or rerun the client to get a fresh update.
-
-## Other methods
-
-### Use a price feed account
-
-If you always want the latest price without posting an update each time, you can pass a *price feed account* (a stable address derived from *feed ID + shard*) directly to your instruction. You still enforce freshness and confidence; an offchain writer must keep that feed account updated. This guide focuses on the *price update account* flow because it is explicit and easy to reproduce on devnet.
