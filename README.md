@@ -284,7 +284,7 @@ pub enum ErrorCode {
 ### Program code explanation
 
 - No HTTP onchain: Your client fetches a Pyth update and posts it via the Receiver program; your program reads that `price_update` account.
-- Fresh + correct feed: `get_price_no_older_than` checks `MAX_AGE_SECS` and `FEED_ID_HEX`, then returns `price`, `conf`, `expo`, `publish_time` (all integers).
+- Fresh + correct feed: `get_price_no_older_than` checks `MAX_AGE_SECS` and `FEED_ID_HEX`, then returns `price`, `conf`, `exponent`, `publish_time` (all integers).
 - Display math: `display_price = price * 10^exponent`, `display_conf = conf * 10^exponent` (e.g., `5854321000` with `exponent = -8` → `58.54321000`).
 - Guards: `MAX_AGE_SECS` enforces freshness; `MAX_CONF_RATIO_BPS` (2% by default) rejects overly wide confidence.
 - Atomic flow: The client posts the update and calls `read_price` atomically in the same final transaction, guaranteeing you read exactly what you just posted.
@@ -641,7 +641,7 @@ Example output:
 
 ## 6. Conclusion and next steps
 
-You built and deployed an Anchor program that *verifies and reads a Pyth price update* posted by your client in the *same transaction*, then logged `price/conf/exponent/timestamp` and printed a human-readable price. This mirrors a production pattern: *fetch signed updates from Hermes → post via Pyth Receiver → consume onchain*.
+You built and deployed an Anchor program that *verifies and reads a Pyth price update* posted by your client in the *same final transaction*, then logged `price/conf/exponent/timestamp` and printed a human-readable price. This mirrors a production pattern: *fetch signed updates from Hermes → post via Pyth Receiver → consume onchain*.
 
 What can you do next?
 
@@ -676,16 +676,6 @@ Encountering issues? Here are common problems and solutions:
   anchor --version    # expect 0.31.1
   npm i -g @coral-xyz/anchor-cli@0.31.1
   exec bash -l        # start a fresh shell if needed
-  ```
-
-- **Solana v2 vs v3 mismatch (borsh/__Pubkey errors)** - Anchor 0.31.x targets Solana v2 crates. If any `solana-* 3.x` appears, force v2.
-  
-  ```bash
-  cargo tree -i solana-program | grep 'solana-program v' | sort -u
-  for c in solana-program solana-pubkey solana-message solana-instruction; do
-    cargo update -p $c --precise 2.3.0 || true
-  done
-  rm -f Cargo.lock && anchor build
   ```
 
 - **Program ID mismatch** - The same address must appear in all three:
