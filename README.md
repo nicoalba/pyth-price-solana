@@ -683,20 +683,7 @@ npm run post-and-use
 
 Example output:
 
-```makefile
-tx: <SIG1>
-Program log: Instruction: InitEncodedVaa
-Program log: Instruction: WriteEncodedVaa
-tx: <SIG2>
-Program log: Instruction: VerifyEncodedVaaV1
-Program log: Instruction: PostUpdate
-Program log: Instruction: ReadPrice
-Program log: price=445713929913, conf=188943660, exponent=-8, t=1756678099
-Program log: Instruction: CloseEncodedVaa
-Program log: Instruction: ReclaimRent
-Display ETH/USD: 4467.67124072 (±1.70034250, ~0.03%) @ 2025-08-31T22:16:49.000Z
-Success: posted + used Pyth update in one transaction
-```
+![Pyth success](pyth-demo/images/pyth-success.png)
 
 - Seeing 1–2 transaction (`tx:`) lines is normal (post + use).
 - The line with `price=…, conf=…, exponent=…, t=…` is your program's `read_price` output.
