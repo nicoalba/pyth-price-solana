@@ -2,6 +2,8 @@
 
 Pyth is a first-party price oracle that publishes onchain price feeds with a price and confidence interval. This end-to-end tutorial takes you from a blank repo to a working Anchor program on devnet that reads a Pyth price *update account* using the *Pyth Solana Receiver* flow. The client fetches a fresh signed update from Hermes, posts it, and in the *same transaction* calls your program to verify and read it.
 
+This tutorial is inspired by the [Pyth Network documentation for Solana price feeds](https://docs.pyth.network/price-feeds).
+
 - [Use Pyth price feeds in an Anchor program](#use-pyth-price-feeds-in-an-anchor-program)
   - [What you'll do](#what-youll-do)
     - [Transaction flow](#transaction-flow)
