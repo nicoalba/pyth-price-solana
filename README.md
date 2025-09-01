@@ -407,7 +407,7 @@ The client fetches a signed Pyth price update, posts it via Pyth Receiver, then 
         npm i -D dotenv-cli
         ```
 
-    2. Create the `env` file with your variables and save it to the `/client` folder.
+    2. Create the `.env` file with your variables and save it to the `/client` folder.
 
         Ensure you insert your devnet URL, your program ID, your Pyth feed ID, and your keypair path:
         
