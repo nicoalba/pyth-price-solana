@@ -355,15 +355,17 @@ The client fetches a signed Pyth price update, posts it via Pyth Receiver, then 
 >[!NOTE]
 >Node 18+ recommended. Avoid `npm audit fix --force` here (it can destabilize the Solana/Pyth stack).
 
-2. Pin `rpc-websockets` and reinstall (prevents export errors):
+2.
 
-    This pins the websocket library to a known-good version and forces a fresh dependency resolution inside `client/` so Node resolves from `client/node_modules` (avoids `ERR_PACKAGE_PATH_NOT_EXPORTED` with newer versions).
+3. Pin `rpc-websockets` and reinstall (prevents export errors):
+
+    This pins the websocket library to a known-good version and forces a fresh dependency resolution inside `client/` so Node resolves from `client/node_modules` (avoids `ERR_PACKAGE_PATH_NOT_EXPORTED` with newer versions):
 
     ```bash
     npm pkg set overrides.rpc-websockets=7.10.0 && rm -rf node_modules package-lock.json && npm install
     ```
 
-3. Create `client/tsconfig.json` with this code:
+4. Create `client/tsconfig.json` with this code:
 
     ```json
     {
@@ -383,7 +385,7 @@ The client fetches a signed Pyth price update, posts it via Pyth Receiver, then 
 
     This `tsconfig.json` defines a compile-first setup for Node16 to emit ES2022 JS to `dist/`, use Node16 module/resolution, and enable CJS/ESM/JSON interop so you avoid common "import/module" errors.
 
-4. Add these keys to `client/package.json` for the build/run scripts, and an override that avoids websocket issues:
+5. Add these keys to `client/package.json` for the build/run scripts, and an override that avoids websocket issues:
 
     ```json
     {
@@ -398,16 +400,24 @@ The client fetches a signed Pyth price update, posts it via Pyth Receiver, then 
     }
     ```
 
-5. Set environment variables. Make sure to fill in your devnet URL, your program ID, and the Pyth feed ID before you run:
+6. Create the `.env` file and auto-fill `PROGRAM_ID`. Make sure to fill in your devnet URL, your program ID, and the Pyth feed ID before you run. Run from inside `pyth-demo/client`:
 
-    ```bash
-    export SOLANA_RPC_URL="https://<your-devnet-rpc>"
-    export PROGRAM_ID="<your-program-id>"
-    export PYTH_FEED_ID_HEX="0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace"
-    export PAYER_KEYPAIR="$HOME/.config/solana/id.json"
-    ```
+    1. Ensure dotenv CLI is available:
 
-6. Create `client-post-and-use.ts` with this code and save it in `/client`:
+        ```bash
+        npm i -D dotenv-cli
+        ```
+
+    2. Create the `env` file with your variables and save it to the `/client` folder:
+
+        ```bash
+        export SOLANA_RPC_URL="https://<your-devnet-rpc>"
+        export PROGRAM_ID="<your-program-id>"
+        export PYTH_FEED_ID_HEX="0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace"
+        export PAYER_KEYPAIR="$HOME/.config/solana/id.json"
+        ```
+
+7. Create `client-post-and-use.ts` with this code and save it in `/client`:
 
     <details>
     <summary>Click to expand: Client script</summary>

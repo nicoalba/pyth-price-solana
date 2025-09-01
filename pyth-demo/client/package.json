@@ -5,14 +5,16 @@
   "type": "commonjs",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "post-and-use": "node dist/client-post-and-use.js"
+    "post-and-use": "dotenv -e .env -- node dist/client-post-and-use.js",
+    "test": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
     "@coral-xyz/anchor": "0.31.1",
-    "@solana/web3.js": "1.91.6",
-    "@pythnetwork/pyth-solana-receiver": "0.11.0"
+    "@pythnetwork/pyth-solana-receiver": "0.11.0",
+    "@solana/web3.js": "1.91.6"
   },
   "devDependencies": {
+    "dotenv-cli": "^10.0.0",
     "typescript": "5.4.5"
   },
   "overrides": {
