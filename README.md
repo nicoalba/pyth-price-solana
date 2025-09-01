@@ -334,6 +334,8 @@ pub enum ErrorCode {
 
 ## 4. Run the client (post + use)
 
+The client fetches a signed Pyth price update, posts it via Pyth Receiver, then calls your Anchor program in the same transaction to verify and read the price:
+
 1. Create a client folder and install dependencies:
 
     ```bash
