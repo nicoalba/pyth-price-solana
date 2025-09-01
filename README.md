@@ -428,7 +428,9 @@ The client fetches a signed Pyth price update, posts it via Pyth Receiver, then 
 
     This `tsconfig.json` defines a compile-first setup for Node16 to emit ES2022 JS to `dist/`, use Node16 module/resolution, and enable CJS/ESM/JSON interop so you avoid common "import/module" errors.
 
-4. Create the `.env` file. Make sure to fill in your devnet URL, your program ID, and the Pyth feed ID before you run. Run from inside `pyth-demo/client`:
+4. Create the `.env` file.
+
+    Run from inside `pyth-demo/client`:
 
     1. Ensure dotenv CLI is available:
 
@@ -448,13 +450,13 @@ The client fetches a signed Pyth price update, posts it via Pyth Receiver, then 
         KEYPAIR_PATH=/home/<you-username>/.config/solana/id.json
         ```
 
-        If you don't know your username, run:
+        If you don’t know the keypair path, print it from Solana config:
 
        ```bash
        solana config get | sed -n 's/^Keypair Path: //p'
        ```
 
-5. Create `client-post-and-use.ts` with this code and save it in `/client`:
+6. Create `client-post-and-use.ts` with this code and save it in `/client`:
         If you don't know your username, run:
 
        ```bash
