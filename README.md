@@ -133,18 +133,14 @@ npm --version
         solana config set --url https://<insert-your-quicknode-devnet-url>
         ```
 
-4. Lock toolchain and confirm PATH (prevents version mismatch errors):
+4. Update `anchor.toml` to lock the toolchain:
 
-    1. Update `anchor.toml`:
-
-        ```toml
-        [toolchain]
-        anchor_version = "0.31.1"
-        solana_version = "2.3.8"
-        package_manager = "npm"
-        ```
-        
-        If these match, move on to Step 5. If they don't, see [Troubleshooting → Toolchain/PATH mismatch](#troubleshooting).
+    ```toml
+    [toolchain]
+    anchor_version = "0.31.1"
+    solana_version = "2.3.8"
+    package_manager = "npm"
+    ```
 
 5. Pin Solana crates to v2.
 
