@@ -390,13 +390,13 @@ The client fetches a signed Pyth price update, posts it via Pyth Receiver, then 
     }
     ```
 
-4. Set environment variables. Make sure to fill in your devnet URL, your program ID, and the Pyth feed ID:
+4. Set environment variables. Make sure to fill in your devnet URL, your program ID, and the Pyth feed ID before you run:
 
     ```bash
-    export SOLANA_RPC_URL="https://<your-devnet-rpc>"   # e.g., your QuickNode devnet URL
-    export PROGRAM_ID="<your-program-id>"               # from `anchor deploy`
-    export PYTH_FEED_ID_HEX="0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace"     # the same feed ID you set in PYTH_FEED_ID_HEX
-    export PAYER_KEYPAIR="$HOME/.config/solana/id.json" # path to your devnet keypair
+    export SOLANA_RPC_URL="https://<your-devnet-rpc>"
+    export PROGRAM_ID="<your-program-id>"
+    export PYTH_FEED_ID_HEX="0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace"
+    export PAYER_KEYPAIR="$HOME/.config/solana/id.json"
     ```
 
 5. Create `client-post-and-use.ts` with this code:
