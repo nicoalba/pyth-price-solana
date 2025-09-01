@@ -105,7 +105,7 @@ npm --version
     cd pyth-demo
     ```
 
-2. Add dependencies to `programs/pyth-demo/Cargo.toml`:
+2. Add a `[dependencies]` to `programs/pyth-demo/Cargo.toml` (*not* the `Cargo.toml` at the root):
 
     ```toml
     [dependencies]
