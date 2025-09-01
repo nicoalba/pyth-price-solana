@@ -134,7 +134,7 @@ npm --version
 
 4. Lock toolchain and confirm PATH (prevents version mismatch errors):
 
-    1. Update `anchor.toml`
+    1. Update `anchor.toml`:
 
         ```toml
         [toolchain]
@@ -152,7 +152,7 @@ npm --version
 
         If these match, move on to Step 5. If they don't, see [Troubleshooting → Toolchain/PATH mismatch](#troubleshooting).
 
-5. Set your program ID:
+5. Generate and set your program ID:
 
     A program ID is your program's onchain address (pubkey) derived from: `target/deploy/pyth_demo-keypair.json`. It must match in *both*:
     
@@ -171,7 +171,7 @@ npm --version
         solana address -k target/deploy/pyth_demo-keypair.json
         ```
     
-    3. Ensure the ID is set in `programs/pyth-demo/src/lib.rs` manually:
+    3. Ensure the ID is set and matches in `programs/pyth-demo/src/lib.rs`:
 
         ```rust
         // programs/pyth-demo/src/lib.rs
