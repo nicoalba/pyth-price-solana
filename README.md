@@ -24,7 +24,7 @@ This tutorial is inspired by the [Pyth Network documentation for Solana price fe
 ## What you'll do
 
 - **Scaffold, write, and deploy** an Anchor program on devnet that logs `price/conf/exponent/timestamp`.
-- **Build a compile-first TS client** that fetches from Hermes, **posts via Pyth Receiver**, and calls your program **in one transaction**.
+- **Build a compile-first TS client** that fetches from Hermes, **posts via Pyth Receiver**, and calls your program **in one or two transactions**.
 - **Test and verify** by inspecting transaction logs and printing a human-readable price.
 
 ### Transaction flow
@@ -59,9 +59,10 @@ Before you begin, ensure you have:
 - Rust toolchain via rustup: `rustup`, `rustc`, and `cargo`
 - Anchor CLI 0.31.x
 - Node 18+ and npm (for the client script)
-- A devnet RPC URL (e.g., a QuickNode endpoint) and a funded devnet keypair
 - The Pyth feed ID (64-char hex for the asset you want, e.g., ETH/USD).
 - Devnet RPC URL and a funded devnet keypair (Recommended: QuickNode)
+
+For help installing Rust, Solana CLI, and Anchor, see [Anchor docs](https://www.anchor-lang.com/docs/installation).
 
 ### Get a QuickNode endpoint
 
@@ -133,7 +134,7 @@ npm --version
         solana config set --url https://<insert-your-quicknode-devnet-url>
         ```
 
-4. Update `anchor.toml` to lock the toolchain:
+4. Update `Anchor.toml` to lock the toolchain:
 
     ```toml
     [toolchain]
@@ -316,6 +317,9 @@ pub enum ErrorCode {
         solana airdrop 3 -u devnet "$WALLET"
         ```
 
+>[!NOTE]
+>- If you get rate limited by the devnet faucet, wait a bit and try later or fund from a different faucet.
+
 2. Run build and deploy:
 
     ```bash
@@ -348,9 +352,9 @@ The client fetches a signed Pyth price update, posts it via Pyth Receiver, then 
 
 2. Update your `client/package.json` and pin rpc-websockets.
 
-    This step replaces `client/package.json` with a known-good config with exact pinned versions plus the npm scripts to build/run with. It also pins `"rpc-websockets": "7.10.0"` via overrides to prevent export errrors.
+    This step replaces `client/package.json` with a known-good config with exact pinned versions plus the npm scripts to build/run with. It also pins `"rpc-websockets": "7.10.0"` via overrides to prevent export errors.
 
-    ```bash
+    ```json
     {
       "name": "client",
       "version": "1.0.0",
@@ -378,35 +382,6 @@ The client fetches a signed Pyth price update, posts it via Pyth Receiver, then 
     ```
 
     Then apply it with `npm install`.
-
-3. Create `client/tsconfig.json` with this code:
-
-    ```
-    {
-      "name": "client",
-      "version": "1.0.0",
-      "private": true,
-      "type": "commonjs",
-      "scripts": {
-        "test": "tsc -p tsconfig.json --noEmit",
-        "build": "tsc -p tsconfig.json",
-        "post-and-use": "dotenv --override -e .env -- node dist/client-post-and-use.js"
-      },
-      "dependencies": {
-        "@coral-xyz/anchor": "0.31.1",
-        "@pythnetwork/pyth-solana-receiver": "0.11.0",
-        "@solana/web3.js": "1.91.6"
-      },
-      "devDependencies": {
-        "@types/node": "20.19.11",
-        "dotenv-cli": "10.0.0",
-        "typescript": "5.4.5"
-      },
-      "overrides": {
-        "rpc-websockets": "7.10.0"
-      }
-    }
-    ```
 
 3. Create `client/tsconfig.json` with this code:
 
@@ -636,7 +611,7 @@ The client fetches a signed Pyth price update, posts it via Pyth Receiver, then 
         await printProgramLogs(connection, sig, "ETH/USD");
       }
 
-      console.log("Success: posted + used Pyth update in one transaction");
+      console.log("Success: posted + used Pyth update in one or two transactions");
     }
 
     main().catch((e) => {
@@ -672,7 +647,7 @@ Example output:
 - Seeing 1–2 transaction (`tx:`) lines is normal (post + use).
 - The line with `price=…, conf=…, exponent=…, t=…` is your program's `read_price` output.
 - Display math: `display_price = price * 10^exponent` (same for `conf`).
-- The price of ETH/USD is $4,467.67.
+- The price of ETH/USD at the time of running is $4,467.67.
 
 ## 6. Conclusion and next steps
 
