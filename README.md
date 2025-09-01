@@ -49,7 +49,7 @@ sequenceDiagram
 
 ## Prerequisites
 
->**Note**: 
+>[!NOTE]
 >- If you're new to Solana or Anchor, review our [Solana fundamentals](https://www.quicknode.com/guides/solana-development/getting-started/solana-fundamentals-reference-guide) and [Intro to Anchor](https://www.quicknode.com/guides/solana-development/anchor/how-to-write-your-first-anchor-program-in-solana-part-1) guides.
 >- We have [a tutorial](https://www.quicknode.com/guides/solana-development/3rd-party-integrations/pyth-price-feeds) for Pyth price feeds using the [Solana Playground (web-based IDE)](https://beta.solpg.io/) for a zero-install experience, but fast-moving SDK/toolchain changes can cause version mismatches. This guide uses a local Anchor workspace for reproducibility.
 
@@ -376,7 +376,7 @@ pub enum ErrorCode {
     - Generates `client/package-lock.json`
     - Populates `client/node_modules` with installed packages
 
-    >**Note**:
+    >[!NOTE]
     >Node 18+ recommended. Avoid `npm audit fix --force` here (it can destabilize the Solana/Pyth stack).
 
 2. Create `client/tsconfig.json` with this code:
