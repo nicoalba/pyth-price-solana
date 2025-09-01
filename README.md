@@ -171,19 +171,30 @@ npm --version
         solana address -k target/deploy/pyth_demo-keypair.json
         ```
     
-    3. Ensure the ID is set and matches in `programs/pyth-demo/src/lib.rs`:
+    3. Ensure the ID is set and matches in `programs/pyth-demo/src/lib.rs` and `Anchor.toml`:
 
-        ```rust
-        // programs/pyth-demo/src/lib.rs
-        declare_id!("PASTE_THE_PUBKEY_YOU_JUST_PRINTED");
-        ```
+        - `lib.rs`:
 
-    4. Set the ID in `Anchor.toml` automatically:
+          ```rust
+          // programs/pyth-demo/src/lib.rs
+          declare_id!("PASTE_THE_PUBKEY_HERE");
+          ```
+
+        - `Anchor.toml`:
+
+          ```toml
+          # Anchor.toml
+          [programs.devnet]
+          pyth_demo = "PASTE_THE_PUBKEY_HERE"  # Program name must = [package].name in programs/pyth-demo/Cargo.toml
+          ```
+
+        If they don't match, run this to sync in both places:
 
         ```bash
         anchor keys sync
         ```
-    5. Rebuild and confirm the pubkey:
+
+    4. Rebuild and confirm the pubkey:
 
         ```bash
         anchor build
