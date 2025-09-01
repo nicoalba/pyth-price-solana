@@ -429,7 +429,6 @@ The client fetches a signed Pyth price update, posts it via Pyth Receiver, then 
     This `tsconfig.json` defines a compile-first setup for Node16 to emit ES2022 JS to `dist/`, use Node16 module/resolution, and enable CJS/ESM/JSON interop so you avoid common "import/module" errors.
 
 4. Create the `.env` file. Make sure to fill in your devnet URL, your program ID, and the Pyth feed ID before you run. Run from inside `pyth-demo/client`:
-4. Create the `.env` file. Make sure to fill in your devnet URL, your program ID, and the Pyth feed ID before you run. Run from inside `pyth-demo/client`:
 
     1. Ensure dotenv CLI is available:
 
