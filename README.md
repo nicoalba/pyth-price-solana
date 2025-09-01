@@ -230,7 +230,7 @@ npm --version
 Replace the content in `programs/pyth-demo/src/lib.rs` with this code. Don't forget to insert your program ID:
 
 <details>
-<summary>Click to expand: Client Script</details>
+<summary>Click to expand: Client Script</summary>
 
 ```rust
 use anchor_lang::prelude::*;
