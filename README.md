@@ -346,37 +346,41 @@ The client fetches a signed Pyth price update, posts it via Pyth Receiver, then 
 >[!NOTE]
 >Node 18+ recommended. Avoid `npm audit fix --force` here (it can destabilize the Solana/Pyth stack).
 
-2. Normalize `client/package.json`:
+2. Update your `client/package.json` and pin rpc-websockets.
 
-    This step declares and pins the exact dependency versions and defines the npm scripts we use to build and run the client with `.env`.
+    This step replaces `client/package.json` with a known-good config with exact pinned versions plus the npm scripts to build/run with `. It also pins `"rpc-websockets": "7.10.0"` via overrides to prevent export errrors.
 
     ```bash
-    # Run inside pyth-demo/client
-    npm pkg set type=commonjs
-    npm pkg set scripts.build="tsc -p tsconfig.json" \
-      scripts.post-and-use="dotenv --override -e .env -- node dist/client-post-and-use.js" \
-      scripts.test="tsc -p tsconfig.json --noEmit"
-
-    npm pkg set dependencies."@coral-xyz/anchor"="0.31.1" \
-      dependencies."@pythnetwork/pyth-solana-receiver"="0.11.0" \
-      dependencies."@solana/web3.js"="1.91.6"
-
-    npm pkg set devDependencies.typescript="5.4.5" \
-      devDependencies."dotenv-cli"="^10.0.0"
-
-3. Pin `rpc-websockets` (prevents export errors):
-
-    Open `client/package.json` and add this top-level key (a sibling of "dependencies", not inside it):
-
-    ```json
-    "overrides": {
-      "rpc-websockets": "7.10.0"
+    cat > package.json <<'JSON'
+    {
+      "name": "client",
+      "version": "1.0.0",
+      "private": true,
+      "type": "commonjs",
+      "scripts": {
+        "test": "tsc -p tsconfig.json --noEmit",
+        "build": "tsc -p tsconfig.json",
+        "post-and-use": "dotenv --override -e .env -- node dist/client-post-and-use.js"
+      },
+      "dependencies": {
+        "@coral-xyz/anchor": "0.31.1",
+        "@pythnetwork/pyth-solana-receiver": "0.11.0",
+        "@solana/web3.js": "1.91.6"
+      },
+      "devDependencies": {
+        "@types/node": "20.19.11",
+        "dotenv-cli": "10.0.0",
+        "typescript": "5.4.5"
+      },
+      "overrides": {
+        "rpc-websockets": "7.10.0"
+      }
     }
+    JSON
+    rm -rf node_modules package-lock.json && npm install
     ```
 
-    Then apply it with `npm install`.
-
-5. Create `client/tsconfig.json` with this code:
+3. Create `client/tsconfig.json` with this code:
 
     ```json
     {
@@ -396,7 +400,7 @@ The client fetches a signed Pyth price update, posts it via Pyth Receiver, then 
 
     This `tsconfig.json` defines a compile-first setup for Node16 to emit ES2022 JS to `dist/`, use Node16 module/resolution, and enable CJS/ESM/JSON interop so you avoid common "import/module" errors.
 
-6. Create the `.env` file. Make sure to fill in your devnet URL, your program ID, and the Pyth feed ID before you run. Run from inside `pyth-demo/client`:
+4. Create the `.env` file. Make sure to fill in your devnet URL, your program ID, and the Pyth feed ID before you run. Run from inside `pyth-demo/client`:
 
     1. Ensure dotenv CLI is available:
 
@@ -413,7 +417,7 @@ The client fetches a signed Pyth price update, posts it via Pyth Receiver, then 
         PAYER_KEYPAIR=/home/<you>/.config/solana/id.json
         ```
 
-7. Create `client-post-and-use.ts` with this code and save it in `/client`:
+5. Create `client-post-and-use.ts` with this code and save it in `/client`:
 
     <details>
     <summary>Click to expand: Client script</summary>
