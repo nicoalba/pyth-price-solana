@@ -407,13 +407,15 @@ The client fetches a signed Pyth price update, posts it via Pyth Receiver, then 
         npm i -D dotenv-cli
         ```
 
-    2. Create the `env` file with your variables and save it to the `/client` folder:
+    2. Create the `env` file with your variables and save it to the `/client` folder.
 
+        Ensure you insert your devnet URL, your program ID, your Pyth feed ID, and your keypair path:
+        
         ```bash
         SOLANA_RPC_URL=https://<your-devnet-rpc>
         PROGRAM_ID=<your-program-id>
         PYTH_FEED_ID_HEX=0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace
-        PAYER_KEYPAIR=/home/<you>/.config/solana/id.json
+        PAYER_KEYPAIR=/home/<you-username>/.config/solana/id.json
         ```
 
 5. Create `client-post-and-use.ts` with this code and save it in `/client`:
