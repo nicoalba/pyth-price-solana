@@ -16,7 +16,7 @@ This tutorial is inspired by the [Pyth Network documentation for Solana price fe
     - [Code explanation](#code-explanation)
   - [3. Build and deploy to devnet](#3-build-and-deploy-to-devnet)
   - [4. Run the client (post + use)](#4-run-the-client-post--use)
-  - [Conclusion and next steps](#conclusion-and-next-steps)
+  - [5. Conclusion and next steps](#5-conclusion-and-next-steps)
   - [Troubleshooting](#troubleshooting)
   - [Other methods](#other-methods)
     - [Use a price feed account](#use-a-price-feed-account)
@@ -613,7 +613,7 @@ pub enum ErrorCode {
     - Display math: `display_price = price * 10^exponent` (same for `conf`).
     - The price of ETH/USD is $4,467.67.
 
-## Conclusion and next steps
+## 5. Conclusion and next steps
 
 You built and deployed an Anchor program that *verifies and reads a Pyth price update* posted by your client in the *same transaction*, then logged `price/conf/exponent/timestamp` and printed a human-readable price. This mirrors a production pattern: *fetch signed updates from Hermes → post via Pyth Receiver → consume on-chain*.
 
