@@ -116,8 +116,8 @@ npm --version
     base64ct = "=1.7.3"   # remove once the SBF toolchain ships rustc ≥ 1.85
     ```
 
->[!IMPORTANT]
->Do *not* add `solana-program` manually; Anchor pins the right version for you.
+    >[!IMPORTANT]
+    >Do *not* add `solana-program` manually; Anchor pins the right version for you.
 
 3. Target devnet in `Anchor.toml`:
     
