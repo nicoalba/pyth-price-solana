@@ -134,14 +134,7 @@ npm --version
         ```
 
 4. Update `anchor.toml` to lock the toolchain:
-4. Update `anchor.toml` to lock the toolchain:
 
-    ```toml
-    [toolchain]
-    anchor_version = "0.31.1"
-    solana_version = "2.3.8"
-    package_manager = "npm"
-    ```
     ```toml
     [toolchain]
     anchor_version = "0.31.1"
