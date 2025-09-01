@@ -154,9 +154,9 @@ npm --version
 
 5. Pin Solana crates to v2.
 
-    Anchor 0.31.x expects Solana v2 crates. A fresh lockfile may pull in v3tes causing `__Pubkey`/`Borsh` errors. This step forces the core Solana crates back to v2.
+    Anchor 0.31.x expects Solana v2 crates. A fresh lockfile may pull in v3 crates causing `__Pubkey`/`Borsh` errors. This step forces the core Solana crates back to v2.
 
-    From the root run:
+    From the workspace root run:
 
     ```bash
     # Fresh resolve
