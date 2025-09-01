@@ -5,7 +5,7 @@
   "type": "commonjs",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "post-and-use": "dotenv -e .env -- node dist/client-post-and-use.js",
+    "post-and-use": "post-and-use": "dotenv --override -e .env -- node dist/client-post-and-use.js",
     "test": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {

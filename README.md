@@ -355,7 +355,23 @@ The client fetches a signed Pyth price update, posts it via Pyth Receiver, then 
 >[!NOTE]
 >Node 18+ recommended. Avoid `npm audit fix --force` here (it can destabilize the Solana/Pyth stack).
 
-2.
+2. Normalize `client/package.json`:
+
+    This step declares and pins the exact dependency versions and defines the npm scripts we use to build and run the client with `.env`.
+
+    ```bash
+    # Run inside pyth-demo/client
+    npm pkg set type=commonjs
+    npm pkg set scripts.build="tsc -p tsconfig.json" \
+      scripts.post-and-use="dotenv --override -e .env -- node dist/client-post-and-use.js" \
+      scripts.test="tsc -p tsconfig.json --noEmit"
+
+    npm pkg set dependencies."@coral-xyz/anchor"="0.31.1" \
+      dependencies."@pythnetwork/pyth-solana-receiver"="0.11.0" \
+      dependencies."@solana/web3.js"="1.91.6"
+
+    npm pkg set devDependencies.typescript="5.4.5" \
+      devDependencies."dotenv-cli"="^10.0.0"
 
 3. Pin `rpc-websockets` and reinstall (prevents export errors):
 
@@ -385,22 +401,7 @@ The client fetches a signed Pyth price update, posts it via Pyth Receiver, then 
 
     This `tsconfig.json` defines a compile-first setup for Node16 to emit ES2022 JS to `dist/`, use Node16 module/resolution, and enable CJS/ESM/JSON interop so you avoid common "import/module" errors.
 
-5. Add these keys to `client/package.json` for the build/run scripts, and an override that avoids websocket issues:
-
-    ```json
-    {
-      "scripts": {
-        "build": "tsc -p tsconfig.json",
-        "post-and-use": "node dist/client-post-and-use.js",
-        "test": "node -e \"console.log('no tests yet')\""
-      },
-      "overrides": {
-        "rpc-websockets": "7.10.0"
-      }
-    }
-    ```
-
-6. Create the `.env` file and auto-fill `PROGRAM_ID`. Make sure to fill in your devnet URL, your program ID, and the Pyth feed ID before you run. Run from inside `pyth-demo/client`:
+5. Create the `.env` file. Make sure to fill in your devnet URL, your program ID, and the Pyth feed ID before you run. Run from inside `pyth-demo/client`:
 
     1. Ensure dotenv CLI is available:
 
@@ -411,13 +412,13 @@ The client fetches a signed Pyth price update, posts it via Pyth Receiver, then 
     2. Create the `env` file with your variables and save it to the `/client` folder:
 
         ```bash
-        export SOLANA_RPC_URL="https://<your-devnet-rpc>"
-        export PROGRAM_ID="<your-program-id>"
-        export PYTH_FEED_ID_HEX="0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace"
-        export PAYER_KEYPAIR="$HOME/.config/solana/id.json"
+        SOLANA_RPC_URL=https://<your-devnet-rpc>
+        PROGRAM_ID=<your-program-id>
+        PYTH_FEED_ID_HEX=0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace
+        PAYER_KEYPAIR=/home/<you>/.config/solana/id.json
         ```
 
-7. Create `client-post-and-use.ts` with this code and save it in `/client`:
+6. Create `client-post-and-use.ts` with this code and save it in `/client`:
 
     <details>
     <summary>Click to expand: Client script</summary>
