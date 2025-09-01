@@ -683,7 +683,7 @@ npm run post-and-use
 
 Example output:
 
-![Pyth success](pyth-demo/images/pyth-success.png)
+![Pyth success](pyth-demo/images/pyth-success-cli.png)
 
 - Seeing 1–2 transaction (`tx:`) lines is normal (post + use).
 - The line with `price=…, conf=…, exponent=…, t=…` is your program's `read_price` output.
