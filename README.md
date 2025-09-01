@@ -182,6 +182,8 @@ npm --version
 
         - `Anchor.toml`:
 
+          If the `[programs.devnet]` doesn't exist, add it under the existing `[programs.localnet]` block:
+
           ```toml
           # Anchor.toml
           [programs.devnet]
