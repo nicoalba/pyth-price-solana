@@ -140,17 +140,10 @@ npm --version
         ```toml
         [toolchain]
         anchor_version = "0.31.1"
-        solana_version = "2.3.8"   # Agave (known-good)
+        solana_version = "2.3.8"
         package_manager = "npm"
         ```
-    
-    2. Verify versions:
-
-        ```bash
-        solana --version   # expect 2.3.x
-        anchor --version   # expect 0.31.1
-        ```
-
+        
         If these match, move on to Step 5. If they don't, see [Troubleshooting → Toolchain/PATH mismatch](#troubleshooting).
 
 5. Pin Solana crates to v2.
