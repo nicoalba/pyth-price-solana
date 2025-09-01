@@ -415,7 +415,7 @@ The client fetches a signed Pyth price update, posts it via Pyth Receiver, then 
         SOLANA_RPC_URL=https://<your-devnet-rpc>
         PROGRAM_ID=<your-program-id>
         PYTH_FEED_ID_HEX=0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace
-        PAYER_KEYPAIR=/home/<you-username>/.config/solana/id.json
+        KEYPAIR_PATH=/home/<you-username>/.config/solana/id.json
         ```
 
 5. Create `client-post-and-use.ts` with this code and save it in `/client`:
