@@ -160,18 +160,12 @@ npm --version
     From the workspace root run:
 
     ```bash
-    # Fresh resolve
-    rm -f Cargo.lock
-    cargo update
-
-    # Pin core Solana crates back to the v2 line (safe to run always).
-    # If a package isn't present, the command will no-op thanks to "|| true".
-    cargo update -p solana-program@3.0.0            --precise 2.3.0  || true
-    cargo update -p solana-program-entrypoint@3.1.0 --precise 2.3.0  || true
-    cargo update -p solana-instruction@3.0.0        --precise 2.3.0  || true
-    cargo update -p solana-sysvar@3.0.0             --precise 2.3.0  || true
-    cargo update -p solana-pubkey@3.0.0             --precise 2.4.0  || true
-    cargo update -p solana-message@3.0.1            --precise 2.4.0  || true
+    cargo update -p solana-program            --precise 2.3.0  || true
+    cargo update -p solana-program-entrypoint --precise 2.3.0  || true
+    cargo update -p solana-instruction        --precise 2.3.0  || true
+    cargo update -p solana-sysvar             --precise 2.3.0  || true
+    cargo update -p solana-pubkey             --precise 2.4.0  || true
+    cargo update -p solana-message            --precise 2.4.0  || true
     ```
 
 6. Generate and set your program ID:
