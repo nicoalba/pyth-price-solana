@@ -13,9 +13,10 @@ This tutorial is inspired by the [Pyth Network documentation for Solana price fe
     - [Get your Pyth feed ID](#get-your-pyth-feed-id)
   - [1. Set up the project scaffold](#1-set-up-the-project-scaffold)
   - [2. Write the onchain program](#2-write-the-onchain-program)
-    - [Code explanation](#code-explanation)
+    - [Program code explanation](#program-code-explanation)
   - [3. Build and deploy to devnet](#3-build-and-deploy-to-devnet)
   - [4. Run the client (post + use)](#4-run-the-client-post--use)
+    - [Script code explanation](#script-code-explanation)
   - [5. Conclusion and next steps](#5-conclusion-and-next-steps)
   - [Troubleshooting](#troubleshooting)
   - [Other methods](#other-methods)
@@ -262,7 +263,7 @@ pub enum ErrorCode {
 }
 ```
 
-### Code explanation
+### Program code explanation
 
 - No HTTP on-chain: Your client fetches a Pyth update and posts it via the Receiver program; your program reads that `price_update` account.
 - Fresh + correct feed: `get_price_no_older_than` checks `MAX_AGE_SECS` and `FEED_ID_HEX`, then returns `price`, `conf`, `expo`, `publish_time` (all integers).
@@ -577,11 +578,13 @@ pub enum ErrorCode {
     });
     ```
 
-    This code uses your env vars to:
+### Script code explanation
 
-    - Fetch a signed Pyth price update from Hermes (offchain)
-    - Post that update on devnet via the Pyth Receiver program
-    - Call your Anchor program (`read_price`) in the same transaction
+This code uses your env vars to:
+
+- Fetch a signed Pyth price update from Hermes (offchain)
+- Post that update on devnet via the Pyth Receiver program
+- Call your Anchor program (`read_price`) in the same transaction
 
 6. Build, then run the client (which prints onchain logs):
 
