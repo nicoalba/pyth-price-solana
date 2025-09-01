@@ -266,7 +266,7 @@ pub mod pyth_demo {
 
 #[derive(Accounts)]
 pub struct ReadPrice<'info> {
-    /// CHECK: Receiver SDK validates that this is a PriceUpdateV2 account
+    /// PriceUpdateV2 posted via Pyth Receiver
     pub price_update: Account<'info, PriceUpdateV2>,
 }
 
@@ -287,7 +287,7 @@ pub enum ErrorCode {
 - Fresh + correct feed: `get_price_no_older_than` checks `MAX_AGE_SECS` and `FEED_ID_HEX`, then returns `price`, `conf`, `expo`, `publish_time` (all integers).
 - Display math: `display_price = price * 10^exponent`, `display_conf = conf * 10^exponent` (e.g., `5854321000` with `exponent = -8` → `58.54321000`).
 - Guards: `MAX_AGE_SECS` enforces freshness; `MAX_CONF_RATIO_BPS` (2% by default) rejects overly wide confidence.
-- Atomic flow: The client posts the update and calls `read_price` in the same transaction, guaranteeing you read exactly what you just posted.
+- Atomic flow: The client posts the update and calls `read_price` atomically in the same final transaction, guaranteeing you read exactly what you just posted.
 
 ## 3. Build and deploy to devnet
 
@@ -329,7 +329,7 @@ pub enum ErrorCode {
 
 ## 4. Run the client (post + use)
 
-The client fetches a signed Pyth price update, posts it via Pyth Receiver, then calls your Anchor program in the same transaction to verify and read the price:
+The client fetches a signed Pyth price update, posts it via Pyth Receiver, then calls your Anchor program atomically in the same final transaction to verify and read the price:
 
 1. Create a client folder and install dependencies:
 
@@ -628,7 +628,7 @@ This code uses your env vars to:
 
 - Fetch a signed Pyth price update from Hermes (offchain)
 - Post that update on devnet via the Pyth Receiver program
-- Call your Anchor program (`read_price`) in the same transaction
+- Call your Anchor program (`read_price`) atomically in the same final transaction
 
 ## 5. Test the program
 
