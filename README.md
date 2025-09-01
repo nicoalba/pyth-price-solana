@@ -446,8 +446,7 @@ The client fetches a signed Pyth price update, posts it via Pyth Receiver, then 
         SOLANA_RPC_URL=https://<your-devnet-rpc>
         PROGRAM_ID=<your-program-id>
         PYTH_FEED_ID_HEX=0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace
-        KEYPAIR_PATH=/home/<you-username>/.config/solana/id.json
-        KEYPAIR_PATH=/home/<you-username>/.config/solana/id.json
+        KEYPAIR_PATH=/home/<your-username>/.config/solana/id.json
         ```
 
         If you don’t know the keypair path, print it from Solana config:
