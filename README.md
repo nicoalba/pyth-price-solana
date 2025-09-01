@@ -153,12 +153,13 @@ npm --version
     From the workspace root run:
 
     ```bash
-    cargo update -p solana-program            --precise 2.3.0  || true
-    cargo update -p solana-program-entrypoint --precise 2.3.0  || true
-    cargo update -p solana-instruction        --precise 2.3.0  || true
-    cargo update -p solana-sysvar             --precise 2.3.0  || true
-    cargo update -p solana-pubkey             --precise 2.4.0  || true
-    cargo update -p solana-message            --precise 2.4.0  || true
+    # 5. Pin Solana crates to v2 (robust, one step)
+    cargo update -p solana-program            --precise 2.3.0 || cargo update -p "$(cargo tree | sed -nE "s/.*(solana-program v3\.[0-9]+\.[0-9]+).*/\1/p"            | head -n1 | sed 's/ v/@/')"            --precise 2.3.0
+    cargo update -p solana-program-entrypoint --precise 2.3.0 || cargo update -p "$(cargo tree | sed -nE "s/.*(solana-program-entrypoint v3\.[0-9]+\.[0-9]+).*/\1/p" | head -n1 | sed 's/ v/@/')" --precise 2.3.0
+    cargo update -p solana-instruction        --precise 2.3.0 || cargo update -p "$(cargo tree | sed -nE "s/.*(solana-instruction v3\.[0-9]+\.[0-9]+).*/\1/p"        | head -n1 | sed 's/ v/@/')"        --precise 2.3.0
+    cargo update -p solana-sysvar             --precise 2.3.0 || cargo update -p "$(cargo tree | sed -nE "s/.*(solana-sysvar v3\.[0-9]+\.[0-9]+).*/\1/p"             | head -n1 | sed 's/ v/@/')"             --precise 2.3.0
+    cargo update -p solana-pubkey             --precise 2.4.0 || cargo update -p "$(cargo tree | sed -nE "s/.*(solana-pubkey v3\.[0-9]+\.[0-9]+).*/\1/p"            | head -n1 | sed 's/ v/@/')"            --precise 2.4.0
+    cargo update -p solana-message            --precise 2.4.0 || cargo update -p "$(cargo tree | sed -nE "s/.*(solana-message v3\.[0-9]+\.[0-9]+).*/\1/p"            | head -n1 | sed 's/ v/@/')"            --precise 2.4.0
     ```
 
 6. Generate and set your program ID:
