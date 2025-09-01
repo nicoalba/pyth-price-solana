@@ -299,13 +299,7 @@ pub enum ErrorCode {
 
 ## 3. Build and deploy to devnet
 
-1. Point Solana at your devnet RPC:
-  
-    ```bash
-    solana config set --url https://<your-devnet-rpc>
-    ```
-
-2. In `Anchor.toml`, add these to your `[toolchain]` block:
+1. In `Anchor.toml`, add these to your `[toolchain]` block:
 
     ```toml
     [toolchain]
@@ -314,7 +308,7 @@ pub enum ErrorCode {
     package_manager = "npm"
     ```
 
-3. Fund your devnet wallet:
+2. Fund your devnet wallet:
 
     1. Set the wallet path:
         
@@ -346,7 +340,7 @@ pub enum ErrorCode {
         solana balance -u devnet "$WALLET"
         ```
 
-4. Run build and deploy:
+3. Run build and deploy:
 
     ```bash
     anchor build
