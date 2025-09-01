@@ -152,7 +152,28 @@ npm --version
 
         If these match, move on to Step 5. If they don't, see [Troubleshooting → Toolchain/PATH mismatch](#troubleshooting).
 
-5. Generate and set your program ID:
+5. Pin Solana crates to v2.
+
+    Anchor 0.31.x expects Solana v2 crates. A fresh lockfile may pull in v3tes causing `__Pubkey`/`Borsh` errors. This step forces the core Solana crates back to v2.
+
+    From the root run:
+
+    ```bash
+    # Fresh resolve
+    rm -f Cargo.lock
+    cargo update
+
+    # Pin core Solana crates back to the v2 line (safe to run always).
+    # If a package isn't present, the command will no-op thanks to "|| true".
+    cargo update -p solana-program@3.0.0            --precise 2.3.0  || true
+    cargo update -p solana-program-entrypoint@3.1.0 --precise 2.3.0  || true
+    cargo update -p solana-instruction@3.0.0        --precise 2.3.0  || true
+    cargo update -p solana-sysvar@3.0.0             --precise 2.3.0  || true
+    cargo update -p solana-pubkey@3.0.0             --precise 2.4.0  || true
+    cargo update -p solana-message@3.0.1            --precise 2.4.0  || true
+    ```
+
+6. Generate and set your program ID:
 
     A program ID is your program's onchain address (pubkey) derived from: `target/deploy/pyth_demo-keypair.json`. It must match in *both*:
     
