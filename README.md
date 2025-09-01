@@ -351,7 +351,6 @@ The client fetches a signed Pyth price update, posts it via Pyth Receiver, then 
     This step replaces `client/package.json` with a known-good config with exact pinned versions plus the npm scripts to build/run with `. It also pins `"rpc-websockets": "7.10.0"` via overrides to prevent export errrors.
 
     ```bash
-    cat > package.json <<'JSON'
     {
       "name": "client",
       "version": "1.0.0",
@@ -376,9 +375,9 @@ The client fetches a signed Pyth price update, posts it via Pyth Receiver, then 
         "rpc-websockets": "7.10.0"
       }
     }
-    JSON
-    rm -rf node_modules package-lock.json && npm install
     ```
+
+    Then apply it with `npm install`.
 
 3. Create `client/tsconfig.json` with this code:
 
