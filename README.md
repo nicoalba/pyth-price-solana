@@ -1,6 +1,6 @@
 # Use Pyth price feeds in an Anchor program
 
-Pyth is a first-party price oracle that publishes onchain price feeds with a price and confidence interval. This end-to-end tutorial takes you from a blank repo to a working Anchor program on devnet that reads a Pyth price *update account* using the *Pyth Solana Receiver* flow. The client fetches a fresh signed update from Hermes, posts it, and in the *same transaction* calls your program to verify and read it.
+Pyth is a first-party price oracle that publishes onchain price feeds with a price and confidence interval. This end-to-end tutorial takes you from a blank repo to a working Anchor program on devnet that reads a Pyth price *update account* using the *Pyth Solana Receiver* flow. The client fetches a fresh signed update from Hermes, posts it, and then atomically calls your program in the same final transaction.
 
 This tutorial is inspired by the [Pyth Network documentation for Solana price feeds](https://docs.pyth.network/price-feeds).
 
@@ -37,7 +37,7 @@ sequenceDiagram
   participant Receiver as Pyth Receiver
   participant Program
 
-  Note over Client,Program: One transaction: post + use
+  Note over Client,Program: Final tx is atomic: post + use
 
   Client->>Hermes: Fetch latest update (base64)
   Hermes-->>Client: Signed update(s)
@@ -403,32 +403,22 @@ The client fetches a signed Pyth price update, posts it via Pyth Receiver, then 
 
     This `tsconfig.json` defines a compile-first setup for Node16 to emit ES2022 JS to `dist/`, use Node16 module/resolution, and enable CJS/ESM/JSON interop so you avoid common "import/module" errors.
 
-4. Create the `.env` file.
+4. Create the `.env` file with your variables and save it to the `/client` folder:
 
-    Run from inside `pyth-demo/client`:
+    Ensure you insert your devnet URL, your program ID, your Pyth feed ID, and your keypair path:
 
-    1. Ensure dotenv CLI is available:
+    ```bash
+    SOLANA_RPC_URL=https://<your-devnet-rpc>
+    PROGRAM_ID=<your-program-id>
+    PYTH_FEED_ID_HEX=0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace
+    KEYPAIR_PATH=/home/<your-username>/.config/solana/id.json
+    ```
 
-        ```bash
-        npm i -D dotenv-cli
-        ```
+    If you don’t know the keypair path, print it from Solana config:
 
-    2. Create the `.env` file with your variables and save it to the `/client` folder.
-
-        Ensure you insert your devnet URL, your program ID, your Pyth feed ID, and your keypair path:
-
-        ```bash
-        SOLANA_RPC_URL=https://<your-devnet-rpc>
-        PROGRAM_ID=<your-program-id>
-        PYTH_FEED_ID_HEX=0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace
-        KEYPAIR_PATH=/home/<your-username>/.config/solana/id.json
-        ```
-
-        If you don’t know the keypair path, print it from Solana config:
-
-       ```bash
-       solana config get | sed -n 's/^Keypair Path: //p'
-       ```
+    ```bash
+    solana config get | sed -n 's/^Keypair Path: //p'
+    ```
 
 5. Create `client-post-and-use.ts` with this code and save it in `/client`:
 
