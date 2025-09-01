@@ -364,15 +364,19 @@ The client fetches a signed Pyth price update, posts it via Pyth Receiver, then 
     npm pkg set devDependencies.typescript="5.4.5" \
       devDependencies."dotenv-cli"="^10.0.0"
 
-3. Pin `rpc-websockets` and reinstall (prevents export errors):
+3. Pin `rpc-websockets` (prevents export errors):
 
-    This pins the websocket library to a known-good version and forces a fresh dependency resolution inside `client/` so Node resolves from `client/node_modules` (avoids `ERR_PACKAGE_PATH_NOT_EXPORTED` with newer versions):
+    Open `client/package.json` and add this top-level key (a sibling of "dependencies", not inside it):
 
-    ```bash
-    npm pkg set overrides.rpc-websockets=7.10.0 && rm -rf node_modules package-lock.json && npm install
+    ```json
+    "overrides": {
+      "rpc-websockets": "7.10.0"
+    }
     ```
 
-4. Create `client/tsconfig.json` with this code:
+    Then apply it with `nnpm install`.
+
+5. Create `client/tsconfig.json` with this code:
 
     ```json
     {
@@ -392,7 +396,7 @@ The client fetches a signed Pyth price update, posts it via Pyth Receiver, then 
 
     This `tsconfig.json` defines a compile-first setup for Node16 to emit ES2022 JS to `dist/`, use Node16 module/resolution, and enable CJS/ESM/JSON interop so you avoid common "import/module" errors.
 
-5. Create the `.env` file. Make sure to fill in your devnet URL, your program ID, and the Pyth feed ID before you run. Run from inside `pyth-demo/client`:
+6. Create the `.env` file. Make sure to fill in your devnet URL, your program ID, and the Pyth feed ID before you run. Run from inside `pyth-demo/client`:
 
     1. Ensure dotenv CLI is available:
 
@@ -409,7 +413,7 @@ The client fetches a signed Pyth price update, posts it via Pyth Receiver, then 
         PAYER_KEYPAIR=/home/<you>/.config/solana/id.json
         ```
 
-6. Create `client-post-and-use.ts` with this code and save it in `/client`:
+7. Create `client-post-and-use.ts` with this code and save it in `/client`:
 
     <details>
     <summary>Click to expand: Client script</summary>
