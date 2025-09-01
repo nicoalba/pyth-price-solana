@@ -17,7 +17,8 @@ This tutorial is inspired by the [Pyth Network documentation for Solana price fe
   - [3. Build and deploy to devnet](#3-build-and-deploy-to-devnet)
   - [4. Run the client (post + use)](#4-run-the-client-post--use)
     - [Script code explanation](#script-code-explanation)
-  - [5. Conclusion and next steps](#5-conclusion-and-next-steps)
+  - [5. Test the program](#5-test-the-program)
+  - [6. Conclusion and next steps](#6-conclusion-and-next-steps)
   - [Troubleshooting](#troubleshooting)
   - [Other methods](#other-methods)
     - [Use a price feed account](#use-a-price-feed-account)
@@ -586,37 +587,39 @@ This code uses your env vars to:
 - Post that update on devnet via the Pyth Receiver program
 - Call your Anchor program (`read_price`) in the same transaction
 
-6. Build, then run the client (which prints onchain logs):
+## 5. Test the program
 
-    ```bash
-    cd client
-    npm run build
-    npm run post-and-use
-    ```
+It's time to build, then run the client (which prints onchain logs). Run:
 
-    Example output:
+```bash
+cd client
+npm run build
+npm run post-and-use
+```
 
-    ```makefile
-    tx: <SIG1>
-    Program log: Instruction: InitEncodedVaa
-    Program log: Instruction: WriteEncodedVaa
-    tx: <SIG2>
-    Program log: Instruction: VerifyEncodedVaaV1
-    Program log: Instruction: PostUpdate
-    Program log: Instruction: ReadPrice
-    Program log: price=445713929913, conf=188943660, exponent=-8, t=1756678099
-    Program log: Instruction: CloseEncodedVaa
-    Program log: Instruction: ReclaimRent
-    Display ETH/USD: 4467.67124072 (±1.70034250, ~0.03%) @ 2025-08-31T22:16:49.000Z
-    Success: posted + used Pyth update in one transaction
-    ```
+Example output:
 
-    - Seeing 1–2 transaction (`tx:`) lines is normal (post + use).
-    - The line with `price=…, conf=…, exponent=…, t=…` is your program's `read_price` output.
-    - Display math: `display_price = price * 10^exponent` (same for `conf`).
-    - The price of ETH/USD is $4,467.67.
+```makefile
+tx: <SIG1>
+Program log: Instruction: InitEncodedVaa
+Program log: Instruction: WriteEncodedVaa
+tx: <SIG2>
+Program log: Instruction: VerifyEncodedVaaV1
+Program log: Instruction: PostUpdate
+Program log: Instruction: ReadPrice
+Program log: price=445713929913, conf=188943660, exponent=-8, t=1756678099
+Program log: Instruction: CloseEncodedVaa
+Program log: Instruction: ReclaimRent
+Display ETH/USD: 4467.67124072 (±1.70034250, ~0.03%) @ 2025-08-31T22:16:49.000Z
+Success: posted + used Pyth update in one transaction
+```
 
-## 5. Conclusion and next steps
+- Seeing 1–2 transaction (`tx:`) lines is normal (post + use).
+- The line with `price=…, conf=…, exponent=…, t=…` is your program's `read_price` output.
+- Display math: `display_price = price * 10^exponent` (same for `conf`).
+- The price of ETH/USD is $4,467.67.
+
+## 6. Conclusion and next steps
 
 You built and deployed an Anchor program that *verifies and reads a Pyth price update* posted by your client in the *same transaction*, then logged `price/conf/exponent/timestamp` and printed a human-readable price. This mirrors a production pattern: *fetch signed updates from Hermes → post via Pyth Receiver → consume on-chain*.
 
