@@ -376,8 +376,8 @@ pub enum ErrorCode {
     - Generates `client/package-lock.json`
     - Populates `client/node_modules` with installed packages
 
-    >[!NOTE]
-    >Node 18+ recommended. Avoid `npm audit fix --force` here (it can destabilize the Solana/Pyth stack).
+>[!NOTE]
+>Node 18+ recommended. Avoid `npm audit fix --force` here (it can destabilize the Solana/Pyth stack).
 
 2. Create `client/tsconfig.json` with this code:
 
