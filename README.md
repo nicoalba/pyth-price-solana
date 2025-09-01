@@ -325,12 +325,6 @@ pub enum ErrorCode {
         solana airdrop 3 -u devnet "$WALLET"
         ```
 
-    5. Verify the balance:
-
-        ```bash
-        solana balance -u devnet "$WALLET"
-        ```
-
 2. Run build and deploy:
 
     ```bash
