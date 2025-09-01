@@ -375,7 +375,7 @@ The client fetches a signed Pyth price update, posts it via Pyth Receiver, then 
 
     This `tsconfig.json` defines a compile-first setup for Node16 to emit ES2022 JS to `dist/`, use Node16 module/resolution, and enable CJS/ESM/JSON interop so you avoid common "import/module" errors.
 
-3. Ensure `client/package.json` has these keys for the build/run scripts, and an override that avoids websocket issues:
+3. Add these keys to `client/package.json` for the build/run scripts, and an override that avoids websocket issues:
 
     ```json
     {
