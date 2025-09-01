@@ -455,13 +455,6 @@ The client fetches a signed Pyth price update, posts it via Pyth Receiver, then 
        solana config get | sed -n 's/^Keypair Path: //p'
        ```
 
-6. Create `client-post-and-use.ts` with this code and save it in `/client`:
-        If you don't know your username, run:
-
-       ```bash
-       solana config get | sed -n 's/^Keypair Path: //p'
-       ```
-
 5. Create `client-post-and-use.ts` with this code and save it in `/client`:
 
     <details>
