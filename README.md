@@ -229,9 +229,6 @@ npm --version
 
 Replace the content in `programs/pyth-demo/src/lib.rs` with this code. Don't forget to insert your program ID:
 
-<details>
-<summary>Click to expand: Client Script</summary>
-
 ```rust
 use anchor_lang::prelude::*;
 use pyth_solana_receiver_sdk::price_update::{ get_feed_id_from_hex, PriceUpdateV2 };
@@ -297,7 +294,6 @@ pub enum ErrorCode {
     WideConfidence,
 }
 ```
-</details>
 
 ### Program code explanation
 
@@ -428,6 +424,9 @@ pub enum ErrorCode {
     ```
 
 5. Create `client-post-and-use.ts` with this code:
+
+    <details>
+    <summary>Click to expand: Client script</summary>
 
     ```ts
     // client/client-post-and-use.ts
@@ -613,6 +612,8 @@ pub enum ErrorCode {
       process.exit(1);
     });
     ```
+
+    </details>
 
 ### Script code explanation
 
