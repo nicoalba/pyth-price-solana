@@ -347,9 +347,7 @@ The client fetches a signed Pyth price update, posts it via Pyth Receiver, then 
 >Node 18+ recommended. Avoid `npm audit fix --force` here (it can destabilize the Solana/Pyth stack).
 
 2. Update your `client/package.json` and pin rpc-websockets.
-2. Update your `client/package.json` and pin rpc-websockets.
 
-    This step replaces `client/package.json` with a known-good config with exact pinned versions plus the npm scripts to build/run with. It also pins `"rpc-websockets": "7.10.0"` via overrides to prevent export errrors.
     This step replaces `client/package.json` with a known-good config with exact pinned versions plus the npm scripts to build/run with. It also pins `"rpc-websockets": "7.10.0"` via overrides to prevent export errrors.
 
     ```bash
