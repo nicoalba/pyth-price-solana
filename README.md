@@ -617,12 +617,12 @@ pub enum ErrorCode {
 
 You built and deployed an Anchor program that *verifies and reads a Pyth price update* posted by your client in the *same transaction*, then logged `price/conf/exponent/timestamp` and printed a human-readable price. This mirrors a production pattern: *fetch signed updates from Hermes → post via Pyth Receiver → consume on-chain*.
 
-What to do next:
+What can you do next?
 
 - Swap `PYTH_FEED_ID_HEX` for other assets (or multiple feeds).
 - Enforce freshness (`MAX_AGE_SECS`) and a confidence threshold before using the price.
 - Persist readings in an account or wire them into program logic (e.g., limits, liquidations).
-- Explore the alternative *price feed account* method or an IDL-based client.
+- Explore the alternative [price feed account](#other-methods) method.
 
 ## Troubleshooting
 
