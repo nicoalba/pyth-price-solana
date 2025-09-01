@@ -381,7 +381,8 @@ The client fetches a signed Pyth price update, posts it via Pyth Receiver, then 
     {
       "scripts": {
         "build": "tsc -p tsconfig.json",
-        "post-and-use": "node dist/client-post-and-use.js"
+        "post-and-use": "node dist/client-post-and-use.js",
+        "test": "node -e \"console.log('no tests yet')\""
       },
       "overrides": {
         "rpc-websockets": "7.10.0"
