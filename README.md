@@ -348,7 +348,7 @@ The client fetches a signed Pyth price update, posts it via Pyth Receiver, then 
 
 2. Update your `client/package.json` and pin rpc-websockets.
 
-    This step replaces `client/package.json` with a known-good config with exact pinned versions plus the npm scripts to build/run with `. It also pins `"rpc-websockets": "7.10.0"` via overrides to prevent export errrors.
+    This step replaces `client/package.json` with a known-good config with exact pinned versions plus the npm scripts to build/run with. It also pins `"rpc-websockets": "7.10.0"` via overrides to prevent export errrors.
 
     ```bash
     {
