@@ -408,8 +408,6 @@ The client fetches a signed Pyth price update, posts it via Pyth Receiver, then 
     }
     ```
 
-    Then apply it with `npm install`.
-
 3. Create `client/tsconfig.json` with this code:
 
     ```json
