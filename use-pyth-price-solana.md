@@ -1,0 +1,710 @@
+# Use Pyth price feeds in an Anchor program
+
+Pyth is a first-party price oracle that publishes onchain price feeds with a price and confidence interval. This end-to-end tutorial takes you from a blank repo to a working Anchor program on devnet that reads a Pyth price *update account* using the *Pyth Solana Receiver* flow. The client fetches a fresh signed update from [Hermes](https://docs.pyth.network/price-feeds/api-instances-and-providers/hermes), posts it, and then atomically calls your program in the same final transaction.
+
+This tutorial is inspired by the [Pyth Network documentation for Solana price feeds](https://docs.pyth.network/price-feeds).
+
+- [Use Pyth price feeds in an Anchor program](#use-pyth-price-feeds-in-an-anchor-program)
+  - [What you'll do](#what-youll-do)
+    - [Transaction flow](#transaction-flow)
+  - [Prerequisites](#prerequisites)
+    - [Get a QuickNode endpoint](#get-a-quicknode-endpoint)
+    - [Version checks](#version-checks)
+    - [Get your Pyth feed ID](#get-your-pyth-feed-id)
+  - [1. Set up the project scaffold](#1-set-up-the-project-scaffold)
+  - [2. Write the onchain program](#2-write-the-onchain-program)
+    - [Program code explanation](#program-code-explanation)
+  - [3. Build and deploy to devnet](#3-build-and-deploy-to-devnet)
+  - [4. Run the client (post and use)](#4-run-the-client-post-and-use)
+    - [Script code explanation](#script-code-explanation)
+  - [5. Test the program](#5-test-the-program)
+  - [6. Conclusion and next steps](#6-conclusion-and-next-steps)
+  - [Troubleshooting](#troubleshooting)
+
+## What you'll do
+
+- **Scaffold, write, and deploy** an Anchor program on devnet that logs `price/conf/exponent/timestamp`.
+- **Build a compile-first TS client** that fetches from Hermes, posts via Pyth Receiver, and calls your program in one or two transactions.
+- **Test and verify** by inspecting transaction logs and printing a human-readable price.
+
+### Transaction flow
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant Client
+  participant Hermes
+  participant Receiver as Pyth Receiver
+  participant Program
+
+  Note over Client,Program: Final tx is atomic: post + use
+
+  Client->>Hermes: Fetch latest update (base64)
+  Hermes-->>Client: Signed update(s)
+  Client->>Receiver: Post update
+  Note over Receiver: Creates/validates PriceUpdateV2
+  Client->>Program: read_price(PriceUpdateV2)
+  Program-->>Client: Logs price/conf/exponent/t
+```
+
+## Prerequisites
+
+>[!NOTE]
+>- If you're new to Solana or Anchor, review our [Solana fundamentals](https://www.quicknode.com/guides/solana-development/getting-started/solana-fundamentals-reference-guide) and [Intro to Anchor](https://www.quicknode.com/guides/solana-development/anchor/how-to-write-your-first-anchor-program-in-solana-part-1) guides.
+>- We have [a tutorial](https://www.quicknode.com/guides/solana-development/3rd-party-integrations/pyth-price-feeds) for Pyth price feeds using the [Solana Playground (web-based IDE)](https://beta.solpg.io/) for a zero-install experience, but fast-moving SDK/toolchain changes can cause breaking changes. This guide uses a local Anchor workspace for reproducibility.
+
+Before you begin, ensure you have:
+
+- Solana CLI (Agave) v2.x
+- Rust toolchain via rustup: `rustup`, `rustc`, and `cargo`
+- Anchor CLI 0.31.x
+- Node 18+ and npm (for the client script)
+- The Pyth feed ID (64-char hex for the asset you want, e.g., ETH/USD).
+- Devnet RPC URL and a funded devnet keypair (Recommended: QuickNode)
+
+For help installing Rust, Solana CLI, and Anchor, see [Anchor docs](https://www.anchor-lang.com/docs/installation).
+
+### Get a QuickNode endpoint
+
+In your QuickNode dashboard:
+
+1. Go to **Endpoints** → **+ New Endpoint**.
+2. Select **Blockchain: Solana** → **Network: Devnet** → **Create**.
+3. Copy the HTTP provider URL.
+
+    ![QuickNode endpoint](pyth-demo/images/quicknode-endpoint.png)
+
+### Version checks
+
+Run these commands to ensure you're up to date:
+
+```bash
+solana --version
+rustc --version
+anchor --version 
+cargo --version
+rustup show active-toolchain
+node --version 
+npm --version
+```
+  
+### Get your Pyth feed ID
+
+1. Open [Pyth Insights: Price Feeds](https://insights.pyth.network/price-feeds).
+2. Search for your asset.
+3. Copy the Price Feed ID.
+  
+    For example, the feed ID for ETH/USD (used in this tutorial) is: `0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace`.
+
+## 1. Set up the project scaffold
+
+1. Create a new Anchor workspace (or add to an existing one), then `cd` into it:
+    
+    ```bash
+    # Creates an Anchor workspace with TypeScript test and npm as the package manager
+    anchor init pyth-demo --package-manager npm
+    cd pyth-demo
+    ```
+
+2. Update the `[dependencies]` block in `programs/pyth-demo/Cargo.toml` (*not* the `Cargo.toml` at the root):
+
+    ```toml
+    [dependencies]
+    anchor-lang = "0.31.1"
+    pyth-solana-receiver-sdk = "0.6.1"
+
+    # TEMP pin: SBF toolchain can't compile base64ct ≥ 1.8 (Rust 2024).
+    base64ct = "=1.7.3"   # remove once the SBF toolchain ships rustc ≥ 1.85
+    ```
+
+>[!IMPORTANT]
+>Do *not* add `solana-program` manually; Anchor pins the right version for you.
+
+3. Target devnet in `Anchor.toml`:
+    
+    1. Switch your `[provider]` block from `cluster = "localnet"` to devnet with this command:
+
+        ```bash
+        sed -i 's/^cluster = "localnet"/cluster = "devnet"/' Anchor.toml || true
+        ```
+
+    2. Point your Solana CLI at your [QuickNode devnet URL](#get-a-quicknode-endpoint):
+
+        ```bash
+        solana config set --url https://<insert-your-quicknode-devnet-url>
+        ```
+
+4. Update `Anchor.toml` to lock the toolchain:
+
+    ```toml
+    [toolchain]
+    anchor_version = "0.31.1"
+    solana_version = "2.3.8"
+    package_manager = "npm"
+    ```
+
+5. Pin Solana crates to v2.
+
+    Anchor 0.31.x expects Solana v2 crates. A fresh lockfile can pull in v3 crates causing `__Pubkey`/`Borsh` errors. This step forces the core Solana crates back to v2.
+
+    From the workspace root, run:
+
+    ```bash
+    v3() { cargo tree | sed -nE "s/.*($1 v3\.[0-9]+\.[0-9]+).*/\1/p" | head -n1; }
+
+    x=$(v3 solana-program);            if [ -n "$x" ]; then cargo update -p "${x// v/@}" --precise 2.3.0; else cargo update -p solana-program            --precise 2.3.0; fi
+    x=$(v3 solana-program-entrypoint); if [ -n "$x" ]; then cargo update -p "${x// v/@}" --precise 2.3.0; else cargo update -p solana-program-entrypoint --precise 2.3.0; fi
+    x=$(v3 solana-instruction);        if [ -n "$x" ]; then cargo update -p "${x// v/@}" --precise 2.3.0; else cargo update -p solana-instruction        --precise 2.3.0; fi
+    x=$(v3 solana-sysvar);             if [ -n "$x" ]; then cargo update -p "${x// v/@}" --precise 2.3.0; else cargo update -p solana-sysvar             --precise 2.3.0; fi
+    x=$(v3 solana-pubkey);             if [ -n "$x" ]; then cargo update -p "${x// v/@}" --precise 2.4.0; else cargo update -p solana-pubkey             --precise 2.4.0; fi
+    x=$(v3 solana-message);            if [ -n "$x" ]; then cargo update -p "${x// v/@}" --precise 2.4.0; else cargo update -p solana-message            --precise 2.4.0; fi
+    ```
+
+6. Generate and set your program ID.
+
+    A program ID is your program's onchain address (pubkey) derived from: `target/deploy/pyth_demo-keypair.json`. It must match in *both*:
+    
+    - `programs/pyth-demo/src/lib.rs` → `declare_id!("...");`
+    - `Anchor.toml` → `[programs.devnet] pyth_demo = "..."`
+
+    1. Build once to create the deploy artifacts:
+        
+        ```bash
+        anchor build
+        ```
+
+    2. Get your Program ID (pubkey derived from the generated keypair):
+
+        ```bash
+        solana address -k target/deploy/pyth_demo-keypair.json
+        ```
+    
+    3. Ensure the ID is set and matches in `programs/pyth-demo/src/lib.rs` and `Anchor.toml`:
+
+        - `lib.rs`:
+
+          ```rust
+          // programs/pyth-demo/src/lib.rs
+          declare_id!("PASTE_THE_PUBKEY_HERE");
+          ```
+
+        - `Anchor.toml`:
+
+          Add the `[programs.devnet]` block under the existing `[programs.localnet]` block:
+
+          ```toml
+          # Anchor.toml
+          [programs.devnet]
+          pyth_demo = "PASTE_THE_PUBKEY_HERE"  # Program name must = [package].name in programs/pyth-demo/Cargo.toml
+          ```
+
+        If they don't match, run this to sync in both places:
+
+        ```bash
+        anchor keys sync
+        ```
+
+    4. Rebuild and confirm the pubkey:
+
+        ```bash
+        anchor build
+        anchor keys list 
+        ```
+
+## 2. Write the onchain program
+
+Replace the content in `programs/pyth-demo/src/lib.rs` with this code. Don't forget to insert your program ID:
+
+<details>
+<summary>Click to expand: Onchain program code</summary>
+
+```rust
+use anchor_lang::prelude::*;
+use pyth_solana_receiver_sdk::price_update::{ get_feed_id_from_hex, PriceUpdateV2 };
+
+declare_id!("11111111111111111111111111111111"); // replace with your program ID
+
+const MAX_AGE_SECS: u64 = 60; // freshness threshold
+const FEED_ID_HEX: &str = "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace"; // e.g., ETH/USD feed ID (hex)
+const MAX_CONF_RATIO_BPS: u64 = 200; // 2% conf/price cap (optional)
+
+#[program]
+pub mod pyth_demo {
+    use super::*;
+
+    pub fn read_price(ctx: Context<ReadPrice>) -> Result<()> {
+        // Verify we are reading the intended asset
+        let feed_id = get_feed_id_from_hex(FEED_ID_HEX)
+            .map_err(|_| error!(ErrorCode::BadFeedId))?;
+
+        // Enforce freshness and load the latest observation for that feed
+        let p = ctx.accounts.price_update.get_price_no_older_than(
+            &Clock::get()?, MAX_AGE_SECS, &feed_id
+        )?;
+
+        // Optional confidence bound: reject overly-uncertain prints
+        require!(p.price != 0, ErrorCode::ZeroPrice);
+        let abs_price: u128 = p.price.unsigned_abs() as u128;
+        if abs_price > 0 {
+            // do math in u128 to avoid u64/u128 divide errors
+            let conf_ratio_bps: u128 = (u128::from(p.conf) * 10_000) / abs_price;
+            require!(
+                conf_ratio_bps <= u128::from(MAX_CONF_RATIO_BPS),
+                ErrorCode::WideConfidence
+            );
+        }
+
+        // Log raw integers for offchain display (scale by 10^exponent offchain)
+        msg!(
+            "price={}, conf={}, exponent={}, t={}",
+            p.price,
+            p.conf,
+            p.exponent,
+            p.publish_time
+        );
+
+        Ok(())
+    }
+}
+
+#[derive(Accounts)]
+pub struct ReadPrice<'info> {
+    /// PriceUpdateV2 posted via Pyth Receiver
+    pub price_update: Account<'info, PriceUpdateV2>,
+}
+
+#[error_code]
+pub enum ErrorCode {
+    #[msg("invalid feed ID")]
+    BadFeedId,
+    #[msg("price was zero")]
+    ZeroPrice,
+    #[msg("price confidence too wide")]
+    WideConfidence,
+}
+```
+</details>
+
+### Program code explanation
+
+- No HTTP onchain: Your client fetches a Pyth update and posts it via the Receiver program; your program reads that `price_update` account.
+- Fresh and correct feed: `get_price_no_older_than` checks `MAX_AGE_SECS` and `FEED_ID_HEX`, then returns `price`, `conf`, `exponent`, `publish_time` (all integers).
+- Display math: `display_price = price * 10^exponent`, `display_conf = conf * 10^exponent` (e.g., `5854321000` with `exponent = -8` → `58.54321000`).
+- Guards: `MAX_AGE_SECS` enforces freshness; `MAX_CONF_RATIO_BPS` (2% by default) rejects overly wide confidence.
+- Atomic flow: The client posts the update and calls `read_price` atomically in the same final transaction, guaranteeing you read exactly what you just posted.
+
+## 3. Build and deploy to devnet
+
+1. Fund your devnet wallet:
+
+    1. Set the wallet path:
+        
+        ```bash
+        WALLET="$HOME/.config/solana/id.json"
+        ```
+
+    2. Create the wallet (if it doesn't exist):
+  
+        ```bash
+        [ -f "$WALLET" ] || solana-keygen new -o "$WALLET"
+        ```
+
+    3. Show the address to check that it worked:
+
+        ```bash
+        solana address -k "$WALLET"
+        ```
+
+    4. Airdrop 3 SOL from the public devnet faucet:
+
+        ```bash
+        solana airdrop 3 -u devnet "$WALLET"
+        ```
+
+>[!NOTE]
+>If you get rate limited by the devnet faucet, wait a bit and try later or fund from a different faucet.
+
+2. Run build and deploy:
+
+    ```bash
+    anchor build
+    anchor deploy --provider.cluster devnet
+    ```
+
+## 4. Run the client (post and use)
+
+The client fetches a signed Pyth price update, posts it via Pyth Receiver, then calls your Anchor program atomically in the same final transaction to verify and read the price:
+
+1. Create a client folder and install dependencies:
+
+    ```bash
+    mkdir -p client && cd client
+    npm init -y
+    npm i @solana/web3.js@1.91.6 @coral-xyz/anchor@0.31.1 @pythnetwork/pyth-solana-receiver@0.11.0
+    npm i -D typescript@^5.4 @types/node@^20.11
+    ```
+
+    This step:
+
+    - Creates a new folder at `pyth-demo/client`
+    - Creates and updates `client/package.json` with dependencies
+    - Generates `client/package-lock.json`
+    - Populates `client/node_modules` with installed packages
+
+>[!NOTE]
+>Node 18+ recommended. Avoid `npm audit fix --force` here (it can destabilize the Solana/Pyth stack).
+
+1. Update your `client/package.json`, then install.
+
+    This step replaces `client/package.json` with a known-good config with exact pinned versions plus the npm scripts to build/run with. It also pins `"rpc-websockets": "7.10.0"` via overrides to prevent export errors:
+
+    1. Update your `package.json`:
+
+        ```json
+        {
+          "name": "client",
+          "version": "1.0.0",
+          "private": true,
+          "type": "commonjs",
+          "scripts": {
+            "test": "tsc -p tsconfig.json --noEmit",
+            "build": "tsc -p tsconfig.json",
+            "post-and-use": "dotenv --override -e .env -- node dist/client-post-and-use.js"
+          },
+          "dependencies": {
+            "@coral-xyz/anchor": "0.31.1",
+            "@pythnetwork/pyth-solana-receiver": "0.11.0",
+            "@solana/web3.js": "1.91.6"
+          },
+          "devDependencies": {
+            "@types/node": "20.19.11",
+            "dotenv-cli": "10.0.0",
+            "typescript": "5.4.5"
+          },
+          "overrides": {
+            "rpc-websockets": "7.10.0"
+          }
+        }
+        ```
+
+    2. Apply it with `npm install`.
+
+2. Create `client/tsconfig.json` with this code:
+
+    ```json
+    {
+      "compilerOptions": {
+        "target": "ES2022",
+        "module": "Node16",
+        "moduleResolution": "Node16",
+        "esModuleInterop": true,
+        "resolveJsonModule": true,
+        "outDir": "dist",
+        "strict": true,
+        "skipLibCheck": true
+      },
+      "include": ["**/*.ts"]
+    }
+    ```
+
+    This `tsconfig.json` defines a compile-first setup for Node16 to emit ES2022 JS to `dist/`, use Node16 module/resolution, and enable CJS/ESM/JSON interop so you avoid common "import/module" errors.
+
+3. Create the `.env` file with your variables and save it to the `/client` folder.
+
+   1. Ensure `dotenv-cli` is available:
+    
+        ```bash
+        npm i -D dotenv-cli
+        ```
+
+    2. Create the `.env` file. Ensure you insert your devnet URL, your program ID, your Pyth feed ID, and your keypair path:
+    
+        ```ini
+        SOLANA_RPC_URL=https://<your-devnet-rpc>
+        PROGRAM_ID=<your-program-id>
+        PYTH_FEED_ID_HEX=0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace
+        KEYPAIR_PATH=/home/<your-username>/.config/solana/id.json
+        ```
+
+        If you don’t know the keypair path, print it from Solana config:
+
+        ```bash
+        solana config get | sed -n 's/^Keypair Path: //p'
+        ```
+
+4. Create `client-post-and-use.ts` with this code and save it in `/client`:
+
+    <details>
+    <summary>Click to expand: Client script</summary>
+
+    ```ts
+    // client/client-post-and-use.ts
+    // Fetch Pyth update (HTTP) → post via Receiver → call your program (manual Anchor ix) → print onchain logs + human-readable price.
+
+    import * as fs from "fs";
+    import * as path from "path";
+    import {
+      Connection,
+      Keypair,
+      PublicKey,
+      VersionedTransaction,
+      Signer,
+      TransactionInstruction,
+    } from "@solana/web3.js";
+    import { AnchorProvider, Wallet } from "@coral-xyz/anchor";
+    import { PythSolanaReceiver } from "@pythnetwork/pyth-solana-receiver";
+    import { createHash } from "crypto";
+
+    function requireEnv(name: string): string {
+      const v = process.env[name];
+      if (!v) throw new Error(`Missing env var: ${name}`);
+      return v;
+    }
+
+    // Anchor discriminator: first 8 bytes of sha256("global:<method>")
+    function anchorSighashGlobal(name: string): Buffer {
+      const h = createHash("sha256").update(`global:${name}`).digest();
+      return h.subarray(0, 8);
+    }
+
+    // Hermes v2 (with legacy fallback) → return base64 updates (string[])
+    async function fetchPythUpdates(feedIdHex: string): Promise<string[]> {
+      const base = process.env.HERMES_URL ?? "https://hermes.pyth.network";
+
+      // v2 endpoint first
+      let url = new URL("/v2/updates/price/latest", base);
+      url.searchParams.set("ids[]", feedIdHex);
+      url.searchParams.set("encoding", "base64");
+      url.searchParams.set("chain", "solana");
+      url.searchParams.set("cluster", "devnet");
+
+      let res = await fetch(url.toString());
+      if (res.status === 404) {
+        // legacy fallback
+        url = new URL("/api/latest_price_updates", base);
+        url.searchParams.set("ids[]", feedIdHex);
+        url.searchParams.set("parsed", "false");
+        res = await fetch(url.toString());
+      }
+      if (!res.ok) throw new Error(`Hermes HTTP ${res.status}`);
+
+      const body: any = await res.json();
+      if (body?.binary?.data && Array.isArray(body.binary.data)) return body.binary.data;
+      if (body?.data?.binary?.data && Array.isArray(body.data.binary.data)) return body.data.binary.data;
+      if (Array.isArray(body?.updates) && body.updates[0]?.binary?.data) return body.updates[0].binary.data;
+      if (Array.isArray(body) && body[0]?.binary?.data) return body[0].binary.data;
+      if (Array.isArray(body?.updates) && typeof body.updates[0] === "string") return body.updates as string[];
+
+      throw new Error("Hermes response missing base64 updates (binary.data)");
+    }
+
+    // helpers to pretty-print integers scaled by 10^exponent
+    function formatScaled(intStr: string, exponent: number): string {
+      let sign = "";
+      if (intStr.startsWith("-")) {
+        sign = "-";
+        intStr = intStr.slice(1);
+      }
+      if (exponent >= 0) return sign + intStr + "0".repeat(exponent);
+      const places = -exponent;
+      if (intStr.length <= places) {
+        return sign + "0." + "0".repeat(places - intStr.length) + intStr;
+      }
+      const split = intStr.length - places;
+      return sign + intStr.slice(0, split) + "." + intStr.slice(split);
+    }
+
+    function bpsToPercent(confStr: string, priceStr: string): string {
+      try {
+        const conf = BigInt(confStr);
+        const priceAbs = (priceStr.startsWith("-") ? BigInt(priceStr.slice(1)) : BigInt(priceStr)) || 1n;
+        const bps = (conf * 10_000n) / priceAbs;
+        // show to two decimals
+        const whole = bps / 100n;
+        const frac = (bps % 100n).toString().padStart(2, "0");
+        return `${whole}.${frac}%`;
+      } catch {
+        return "~";
+      }
+    }
+
+    // Print logs and a human-readable price line if present
+    async function printProgramLogs(connection: Connection, sig: string, label = "ETH/USD") {
+      const tx = await connection.getTransaction(sig, {
+        commitment: "confirmed",
+        maxSupportedTransactionVersion: 0,
+      });
+      const logs = tx?.meta?.logMessages ?? [];
+      for (const line of logs) {
+        if (line.startsWith("Program log:")) console.log(line);
+      }
+
+      // Try to parse: price=..., conf=..., exponent=..., t=...
+      const priceLine = logs.find((l) => l.includes("price=") && l.includes("exponent="));
+      if (priceLine) {
+        const m = priceLine.match(/price=(-?\d+), conf=(\d+), (?:expo|exponent)=(-?\d+), t=(\d+)/);
+        if (m) {
+          const [, priceI, confI, expoI, tSec] = m;
+          const displayPrice = formatScaled(priceI, parseInt(expoI, 10));
+          const displayConf  = formatScaled(confI,  parseInt(expoI, 10));
+          const confPct = bpsToPercent(confI, priceI);
+          const when = new Date(Number(tSec) * 1000).toISOString();
+          console.log(`Display ${label}: ${displayPrice} (±${displayConf}, ~${confPct}) @ ${when}`);
+        }
+      }
+    }
+
+    async function main() {
+      // --- env ---
+      const rpc = requireEnv("SOLANA_RPC_URL");
+      const programId = new PublicKey(requireEnv("PROGRAM_ID"));
+      const feedIdHex = requireEnv("PYTH_FEED_ID_HEX");
+      const keypath =
+        process.env.PAYER_KEYPAIR ?? path.join(process.env.HOME || "", ".config/solana/id.json");
+
+      // --- setup ---
+      const payer = Keypair.fromSecretKey(
+        Uint8Array.from(JSON.parse(fs.readFileSync(keypath, "utf8")))
+      );
+      const connection = new Connection(rpc, "confirmed");
+      const provider = new AnchorProvider(connection, new Wallet(payer), {});
+
+      // --- 1) fetch signed update (Hermes over HTTP) ---
+      const priceUpdateData = await fetchPythUpdates(feedIdHex);
+      if (priceUpdateData.length === 0) throw new Error("No price updates from Hermes");
+
+      // --- 2) one transaction: post update → call your program ---
+      const receiver = new PythSolanaReceiver({ connection, wallet: provider.wallet as any });
+      const txb = receiver.newTransactionBuilder({ closeUpdateAccounts: true });
+
+      // A) post (creates temp PriceUpdateV2 account)
+      await txb.addPostPriceUpdates(priceUpdateData);
+
+      // B) use (manual Anchor instruction for read_price())
+      await txb.addPriceConsumerInstructions(
+        async (getPriceUpdateAccount: (feedId: string) => PublicKey) => {
+          const priceUpdatePk = getPriceUpdateAccount(feedIdHex);
+
+          // read_price has no args → data = 8-byte discriminator only
+          const data = anchorSighashGlobal("read_price");
+
+          const ix = new TransactionInstruction({
+            programId,
+            keys: [{ pubkey: priceUpdatePk, isSigner: false, isWritable: false }],
+            data,
+          });
+
+          return [{ instruction: ix, signers: [] }];
+        }
+      );
+
+      // --- 3) build, sign, send, confirm + print logs + human-readable price ---
+      const built: { tx: VersionedTransaction; signers: Signer[] }[] =
+        await txb.buildVersionedTransactions({});
+
+      for (const { tx, signers } of built) {
+        tx.sign([payer, ...(signers || [])]);
+        const sig = await connection.sendRawTransaction(tx.serialize(), {
+          skipPreflight: false,
+          maxRetries: 3,
+        });
+        await connection.confirmTransaction(sig, "confirmed");
+        console.log("tx:", sig);
+        await printProgramLogs(connection, sig, "ETH/USD");
+      }
+
+      console.log("Success: posted + used Pyth update in one or two transactions");
+    }
+
+    main().catch((e) => {
+      console.error(e);
+      process.exit(1);
+    });
+    ```
+    </details>
+
+### Script code explanation
+
+This code uses your env vars to:
+
+- Fetch a signed Pyth price update from Hermes (offchain)
+- Post that update on devnet via the Pyth Receiver program
+- Call your Anchor program (`read_price`) atomically in the same final transaction
+
+## 5. Test the program
+
+It's time to build then run the client (which prints onchain logs). Run:
+
+```bash
+cd client
+npm run build
+npm run post-and-use
+```
+
+Example output:
+
+![Pyth success](pyth-demo/images/pyth-success-cli.png)
+
+- Seeing 1–2 transaction (`tx:`) lines is normal (post and use).
+- The line with `price=…, conf=…, exponent=…, t=…` is your program's `read_price` output.
+- Display math: `display_price = price * 10^exponent` (same for `conf`).
+- The price of ETH/USD at the time of running is $4,467.67.
+
+## 6. Conclusion and next steps
+
+You built and deployed an Anchor program that *verifies and reads a Pyth price update* posted by your client in the *same final transaction*, then logged `price/conf/exponent/timestamp` and printed a human-readable price. This mirrors a production pattern: *fetch signed updates from Hermes → post via Pyth Receiver → consume onchain*.
+
+What can you do next?
+
+- Swap `PYTH_FEED_ID_HEX` for other assets (or multiple feeds).
+- Enforce freshness (`MAX_AGE_SECS`) and a confidence threshold before using the price.
+- Persist readings in an account or wire them into program logic (e.g., limits, liquidations).
+
+If you don't want to post a new signed Hermes update to the Pyth Receiver each time, read from the *price feed account* (a persistent account per feed ID). This guide uses the *price update account* flow because it's explicit and easy to reproduce on devnet.
+
+## Troubleshooting
+
+Encountering issues? Here are common problems and solutions:
+
+- **Edition 2024 / base64ct error** — Pin `base64ct` and rebuild; verify `1.7.3` is used:
+
+  ```bash
+  # In programs/pyth-demo/Cargo.toml add:
+  # base64ct = "=1.7.3"
+  rm -f Cargo.lock
+  cargo update -p base64ct --precise 1.7.3
+  anchor build
+  cargo tree -i base64ct | grep 1.7.3
+  ```
+
+  Remove the pin once the SBF toolchain ships rustc ≥ 1.85.
+
+- **Toolchain / PATH mismatch** — Ensure your shell uses Solana's active release and Anchor 0.31.1:
+
+  ```bash
+  export PATH="$HOME/.local/share/solana/install/active_release/bin:$PATH"
+  solana --version    # expect 2.x (Agave)
+  anchor --version    # expect 0.31.1
+  npm i -g @coral-xyz/anchor-cli@0.31.1
+  exec bash -l        # start a fresh shell if needed
+  ```
+
+- **Program ID mismatch** — The same address must appear in all three:
+
+  - `declare_id!()` in `programs/pyth-demo/src/lib.rs`
+  - `[programs.devnet]` in `Anchor.toml`
+  - Program keypair file: `target/deploy/pyth_demo-keypair.json`
+
+  Run:
+
+  ```bash
+  anchor keys sync
+  anchor build
+  ```
+
+- **Stale price / Hermes freshness** — Fetch Hermes *immediately* before posting (the client does this). Use this to check:
+
+  ```bash
+  curl -s "https://hermes.pyth.network/v2/updates/price/latest?chain=solana&cluster=devnet&encoding=base64&ids=<FEED_ID>" | jq .binary.data
+  ```
+  If your onchain check enforces age, relax for devnet (e.g., `MAX_AGE_SECS=120`) or rerun the client to get a fresh update.
