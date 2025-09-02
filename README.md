@@ -405,20 +405,26 @@ The client fetches a signed Pyth price update, posts it via Pyth Receiver, then 
 
 4. Create the `.env` file with your variables and save it to the `/client` folder:
 
-    Ensure you insert your devnet URL, your program ID, your Pyth feed ID, and your keypair path:
+   1. Ensure dotenv CLI is available:
+    
+        ```bash
+        npm i -D dotenv-cli
+        ```
 
-    ```bash
-    SOLANA_RPC_URL=https://<your-devnet-rpc>
-    PROGRAM_ID=<your-program-id>
-    PYTH_FEED_ID_HEX=0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace
-    KEYPAIR_PATH=/home/<your-username>/.config/solana/id.json
-    ```
+    2. Create the `.env`. Ensure you insert your devnet URL, your program ID, your Pyth feed ID, and your keypair path:
+    
+        ```ini
+        SOLANA_RPC_URL=https://<your-devnet-rpc>
+        PROGRAM_ID=<your-program-id>
+        PYTH_FEED_ID_HEX=0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace
+        KEYPAIR_PATH=/home/<your-username>/.config/solana/id.json
+        ```
 
-    If you don’t know the keypair path, print it from Solana config:
+        If you don’t know the keypair path, print it from Solana config:
 
-    ```bash
-    solana config get | sed -n 's/^Keypair Path: //p'
-    ```
+        ```bash
+        solana config get | sed -n 's/^Keypair Path: //p'
+        ```
 
 5. Create `client-post-and-use.ts` with this code and save it in `/client`:
 
