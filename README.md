@@ -1,6 +1,6 @@
 # Use Pyth price feeds in an Anchor program
 
-Pyth is a first-party price oracle that publishes onchain price feeds with a price and confidence interval. This end-to-end tutorial takes you from a blank repo to a working Anchor program on devnet that reads a Pyth price *update account* using the *Pyth Solana Receiver* flow. The client fetches a fresh signed update from Hermes, posts it, and then atomically calls your program in the same final transaction.
+Pyth is a first-party price oracle that publishes onchain price feeds with a price and confidence interval. This end-to-end tutorial takes you from a blank repo to a working Anchor program on devnet that reads a Pyth price *update account* using the *Pyth Solana Receiver* flow. The client fetches a fresh signed update from [Hermes](https://docs.pyth.network/price-feeds/api-instances-and-providers/hermes), posts it, and then atomically calls your program in the same final transaction.
 
 This tutorial is inspired by the [Pyth Network documentation for Solana price feeds](https://docs.pyth.network/price-feeds).
 
@@ -24,7 +24,7 @@ This tutorial is inspired by the [Pyth Network documentation for Solana price fe
 ## What you'll do
 
 - **Scaffold, write, and deploy** an Anchor program on devnet that logs `price/conf/exponent/timestamp`.
-- **Build a compile-first TS client** that fetches from Hermes, **posts via Pyth Receiver**, and calls your program **in one or two transactions**.
+- **Build a compile-first TS client** that fetches from Hermes, posts via Pyth Receiver, and calls your program in one or two transactions.
 - **Test and verify** by inspecting transaction logs and printing a human-readable price.
 
 ### Transaction flow
@@ -51,7 +51,7 @@ sequenceDiagram
 
 >[!NOTE]
 >- If you're new to Solana or Anchor, review our [Solana fundamentals](https://www.quicknode.com/guides/solana-development/getting-started/solana-fundamentals-reference-guide) and [Intro to Anchor](https://www.quicknode.com/guides/solana-development/anchor/how-to-write-your-first-anchor-program-in-solana-part-1) guides.
->- We have [a tutorial](https://www.quicknode.com/guides/solana-development/3rd-party-integrations/pyth-price-feeds) for Pyth price feeds using the [Solana Playground (web-based IDE)](https://beta.solpg.io/) for a zero-install experience, but fast-moving SDK/toolchain changes can cause version mismatches. This guide uses a local Anchor workspace for reproducibility.
+>- We have [a tutorial](https://www.quicknode.com/guides/solana-development/3rd-party-integrations/pyth-price-feeds) for Pyth price feeds using the [Solana Playground (web-based IDE)](https://beta.solpg.io/) for a zero-install experience, but fast-moving SDK/toolchain changes can cause breaking changes. This guide uses a local Anchor workspace for reproducibility.
 
 Before you begin, ensure you have:
 
@@ -94,7 +94,7 @@ npm --version
 2. Search for your asset.
 3. Copy the Price Feed ID.
   
-    For example, the feed ID for ETH/USD (used in this tutorial) is: `0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace`
+    For example, the feed ID for ETH/USD (used in this tutorial) is: `0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace`.
 
 ## 1. Set up the project scaffold
 
@@ -122,7 +122,7 @@ npm --version
 
 3. Target devnet in `Anchor.toml`:
     
-    1. If your `[provider]` block says `cluster = "localnet"`, switch it to devnet with this command:
+    1. Switch your `[provider]` block from `cluster = "localnet"` to devnet with this command:
 
         ```bash
         sed -i 's/^cluster = "localnet"/cluster = "devnet"/' Anchor.toml || true
