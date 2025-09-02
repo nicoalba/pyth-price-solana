@@ -164,8 +164,8 @@ npm --version
 
     A program ID is your program's onchain address (pubkey) derived from: `target/deploy/pyth_demo-keypair.json`. It must match in *both*:
     
-    - `programs/pyth-demo/src/lib.rs` -> `declare_id!("...");`
-    - `Anchor.toml` -> `[programs.devnet] pyth_demo = "..."`
+    - `programs/pyth-demo/src/lib.rs` → `declare_id!("...");`
+    - `Anchor.toml` → `[programs.devnet] pyth_demo = "..."`
 
     1. Build once to create the deploy artifacts:
         
@@ -214,6 +214,9 @@ npm --version
 ## 2. Write the onchain program
 
 Replace the content in `programs/pyth-demo/src/lib.rs` with this code. Don't forget to insert your program ID:
+
+<details>
+<summary>Click to expand: Onchain program code</summary>
 
 ```rust
 use anchor_lang::prelude::*;
@@ -280,6 +283,7 @@ pub enum ErrorCode {
     WideConfidence,
 }
 ```
+</details>
 
 ### Program code explanation
 
@@ -350,7 +354,7 @@ The client fetches a signed Pyth price update, posts it via Pyth Receiver, then 
 >[!NOTE]
 >Node 18+ recommended. Avoid `npm audit fix --force` here (it can destabilize the Solana/Pyth stack).
 
-1. Update your `client/package.json` and pin `rpc-websockets`.
+1. Update your `client/package.json`, then install.
 
     This step replaces `client/package.json` with a known-good config with exact pinned versions plus the npm scripts to build/run with. It also pins `"rpc-websockets": "7.10.0"` via overrides to prevent export errors:
 
@@ -405,15 +409,15 @@ The client fetches a signed Pyth price update, posts it via Pyth Receiver, then 
 
     This `tsconfig.json` defines a compile-first setup for Node16 to emit ES2022 JS to `dist/`, use Node16 module/resolution, and enable CJS/ESM/JSON interop so you avoid common "import/module" errors.
 
-3. Create the `.env` file with your variables and save it to the `/client` folder:
+3. Create the `.env` file with your variables and save it to the `/client` folder.
 
-   1. Ensure dotenv CLI is available:
+   1. Ensure `dotenv-cli` is available:
     
         ```bash
         npm i -D dotenv-cli
         ```
 
-    2. Create the `.env`. Ensure you insert your devnet URL, your program ID, your Pyth feed ID, and your keypair path:
+    2. Create the `.env` file. Ensure you insert your devnet URL, your program ID, your Pyth feed ID, and your keypair path:
     
         ```ini
         SOLANA_RPC_URL=https://<your-devnet-rpc>
@@ -617,7 +621,6 @@ The client fetches a signed Pyth price update, posts it via Pyth Receiver, then 
       process.exit(1);
     });
     ```
-
     </details>
 
 ### Script code explanation
@@ -630,7 +633,7 @@ This code uses your env vars to:
 
 ## 5. Test the program
 
-It's time to build, then run the client (which prints onchain logs). Run:
+It's time to build then run the client (which prints onchain logs). Run:
 
 ```bash
 cd client
@@ -642,7 +645,7 @@ Example output:
 
 ![Pyth success](pyth-demo/images/pyth-success-cli.png)
 
-- Seeing 1–2 transaction (`tx:`) lines is normal (post + use).
+- Seeing 1–2 transaction (`tx:`) lines is normal (post and use).
 - The line with `price=…, conf=…, exponent=…, t=…` is your program's `read_price` output.
 - Display math: `display_price = price * 10^exponent` (same for `conf`).
 - The price of ETH/USD at the time of running is $4,467.67.
@@ -657,13 +660,13 @@ What can you do next?
 - Enforce freshness (`MAX_AGE_SECS`) and a confidence threshold before using the price.
 - Persist readings in an account or wire them into program logic (e.g., limits, liquidations).
 
-If you don't want to post a new signed Hermes update to the Pyth Receiver each time, read from the *price feed account* (a persistent account per feed ID). Pass it to your instruction and enforce freshness/confidence; an offchain writer keeps it updated. This guide uses the *price update account* flow because it's explicit and easy to reproduce on devnet.
+If you don't want to post a new signed Hermes update to the Pyth Receiver each time, read from the *price feed account* (a persistent account per feed ID). This guide uses the *price update account* flow because it's explicit and easy to reproduce on devnet.
 
 ## Troubleshooting
 
 Encountering issues? Here are common problems and solutions:
 
-- **Edition 2024 / base64ct error**: Pin `base64ct` and rebuild; verify `1.7.3` is used:
+- **Edition 2024 / base64ct error** — Pin `base64ct` and rebuild; verify `1.7.3` is used:
 
   ```bash
   # In programs/pyth-demo/Cargo.toml add:
@@ -676,7 +679,7 @@ Encountering issues? Here are common problems and solutions:
 
   Remove the pin once the SBF toolchain ships rustc ≥ 1.85.
 
-- **Toolchain / PATH mismatch** - Ensure your shell uses Solana's active release and Anchor 0.31.1:
+- **Toolchain / PATH mismatch** — Ensure your shell uses Solana's active release and Anchor 0.31.1:
 
   ```bash
   export PATH="$HOME/.local/share/solana/install/active_release/bin:$PATH"
@@ -686,18 +689,20 @@ Encountering issues? Here are common problems and solutions:
   exec bash -l        # start a fresh shell if needed
   ```
 
-- **Program ID mismatch** - The same address must appear in all three:
+- **Program ID mismatch** — The same address must appear in all three:
 
   - `declare_id!()` in `programs/pyth-demo/src/lib.rs`
   - `[programs.devnet]` in `Anchor.toml`
-  - Derived from `target/deploy/pyth_demo-keypair.json` (`solana address -k ...`)
+  - Program keypair file: `target/deploy/pyth_demo-keypair.json`
+
+  Run:
 
   ```bash
   anchor keys sync
   anchor build
   ```
 
-- **Stale price / Hermes freshness**- Fetch Hermes *immediately* before posting (the client does this). Sanity-check updates:
+- **Stale price / Hermes freshness** — Fetch Hermes *immediately* before posting (the client does this). Use this to check:
 
   ```bash
   curl -s "https://hermes.pyth.network/v2/updates/price/latest?chain=solana&cluster=devnet&encoding=base64&ids=<FEED_ID>" | jq .binary.data
