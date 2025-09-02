@@ -15,7 +15,7 @@ This tutorial is inspired by the [Pyth Network documentation for Solana price fe
   - [2. Write the onchain program](#2-write-the-onchain-program)
     - [Program code explanation](#program-code-explanation)
   - [3. Build and deploy to devnet](#3-build-and-deploy-to-devnet)
-  - [4. Run the client (post + use)](#4-run-the-client-post--use)
+  - [4. Run the client (post and use)](#4-run-the-client-post-and-use)
     - [Script code explanation](#script-code-explanation)
   - [5. Test the program](#5-test-the-program)
   - [6. Conclusion and next steps](#6-conclusion-and-next-steps)
@@ -145,9 +145,9 @@ npm --version
 
 5. Pin Solana crates to v2.
 
-    Anchor 0.31.x expects Solana v2 crates. A fresh lockfile may pull in v3 crates causing `__Pubkey`/`Borsh` errors. This step forces the core Solana crates back to v2.
+    Anchor 0.31.x expects Solana v2 crates. A fresh lockfile can pull in v3 crates causing `__Pubkey`/`Borsh` errors. This step forces the core Solana crates back to v2.
 
-    From the workspace root run:
+    From the workspace root, run:
 
     ```bash
     v3() { cargo tree | sed -nE "s/.*($1 v3\.[0-9]+\.[0-9]+).*/\1/p" | head -n1; }
@@ -160,7 +160,7 @@ npm --version
     x=$(v3 solana-message);            if [ -n "$x" ]; then cargo update -p "${x// v/@}" --precise 2.4.0; else cargo update -p solana-message            --precise 2.4.0; fi
     ```
 
-6. Generate and set your program ID:
+6. Generate and set your program ID.
 
     A program ID is your program's onchain address (pubkey) derived from: `target/deploy/pyth_demo-keypair.json`. It must match in *both*:
     
@@ -190,7 +190,7 @@ npm --version
 
         - `Anchor.toml`:
 
-          If the `[programs.devnet]` block doesn't exist, add it under the existing `[programs.localnet]` block:
+          Add the `[programs.devnet]` block under the existing `[programs.localnet]` block:
 
           ```toml
           # Anchor.toml
@@ -284,7 +284,7 @@ pub enum ErrorCode {
 ### Program code explanation
 
 - No HTTP onchain: Your client fetches a Pyth update and posts it via the Receiver program; your program reads that `price_update` account.
-- Fresh + correct feed: `get_price_no_older_than` checks `MAX_AGE_SECS` and `FEED_ID_HEX`, then returns `price`, `conf`, `exponent`, `publish_time` (all integers).
+- Fresh and correct feed: `get_price_no_older_than` checks `MAX_AGE_SECS` and `FEED_ID_HEX`, then returns `price`, `conf`, `exponent`, `publish_time` (all integers).
 - Display math: `display_price = price * 10^exponent`, `display_conf = conf * 10^exponent` (e.g., `5854321000` with `exponent = -8` → `58.54321000`).
 - Guards: `MAX_AGE_SECS` enforces freshness; `MAX_CONF_RATIO_BPS` (2% by default) rejects overly wide confidence.
 - Atomic flow: The client posts the update and calls `read_price` atomically in the same final transaction, guaranteeing you read exactly what you just posted.
@@ -318,7 +318,7 @@ pub enum ErrorCode {
         ```
 
 >[!NOTE]
->- If you get rate limited by the devnet faucet, wait a bit and try later or fund from a different faucet.
+>If you get rate limited by the devnet faucet, wait a bit and try later or fund from a different faucet.
 
 2. Run build and deploy:
 
@@ -327,7 +327,7 @@ pub enum ErrorCode {
     anchor deploy --provider.cluster devnet
     ```
 
-## 4. Run the client (post + use)
+## 4. Run the client (post and use)
 
 The client fetches a signed Pyth price update, posts it via Pyth Receiver, then calls your Anchor program atomically in the same final transaction to verify and read the price:
 
@@ -340,9 +340,9 @@ The client fetches a signed Pyth price update, posts it via Pyth Receiver, then 
     npm i -D typescript@^5.4 @types/node@^20.11
     ```
 
-    These commands:
+    This step:
 
-    - Create a new folder at `pyth-demo/client`
+    - Creates a new folder at `pyth-demo/client`
     - Creates and updates `client/package.json` with dependencies
     - Generates `client/package-lock.json`
     - Populates `client/node_modules` with installed packages
@@ -350,40 +350,42 @@ The client fetches a signed Pyth price update, posts it via Pyth Receiver, then 
 >[!NOTE]
 >Node 18+ recommended. Avoid `npm audit fix --force` here (it can destabilize the Solana/Pyth stack).
 
-2. Update your `client/package.json` and pin rpc-websockets.
+1. Update your `client/package.json` and pin `rpc-websockets`.
 
-    This step replaces `client/package.json` with a known-good config with exact pinned versions plus the npm scripts to build/run with. It also pins `"rpc-websockets": "7.10.0"` via overrides to prevent export errors.
+    This step replaces `client/package.json` with a known-good config with exact pinned versions plus the npm scripts to build/run with. It also pins `"rpc-websockets": "7.10.0"` via overrides to prevent export errors:
 
-    ```json
-    {
-      "name": "client",
-      "version": "1.0.0",
-      "private": true,
-      "type": "commonjs",
-      "scripts": {
-        "test": "tsc -p tsconfig.json --noEmit",
-        "build": "tsc -p tsconfig.json",
-        "post-and-use": "dotenv --override -e .env -- node dist/client-post-and-use.js"
-      },
-      "dependencies": {
-        "@coral-xyz/anchor": "0.31.1",
-        "@pythnetwork/pyth-solana-receiver": "0.11.0",
-        "@solana/web3.js": "1.91.6"
-      },
-      "devDependencies": {
-        "@types/node": "20.19.11",
-        "dotenv-cli": "10.0.0",
-        "typescript": "5.4.5"
-      },
-      "overrides": {
-        "rpc-websockets": "7.10.0"
-      }
-    }
-    ```
+    1. Update your `package.json`:
 
-    Then apply it with `npm install`.
+        ```json
+        {
+          "name": "client",
+          "version": "1.0.0",
+          "private": true,
+          "type": "commonjs",
+          "scripts": {
+            "test": "tsc -p tsconfig.json --noEmit",
+            "build": "tsc -p tsconfig.json",
+            "post-and-use": "dotenv --override -e .env -- node dist/client-post-and-use.js"
+          },
+          "dependencies": {
+            "@coral-xyz/anchor": "0.31.1",
+            "@pythnetwork/pyth-solana-receiver": "0.11.0",
+            "@solana/web3.js": "1.91.6"
+          },
+          "devDependencies": {
+            "@types/node": "20.19.11",
+            "dotenv-cli": "10.0.0",
+            "typescript": "5.4.5"
+          },
+          "overrides": {
+            "rpc-websockets": "7.10.0"
+          }
+        }
+        ```
 
-3. Create `client/tsconfig.json` with this code:
+    2. Apply it with `npm install`.
+
+2. Create `client/tsconfig.json` with this code:
 
     ```json
     {
@@ -403,7 +405,7 @@ The client fetches a signed Pyth price update, posts it via Pyth Receiver, then 
 
     This `tsconfig.json` defines a compile-first setup for Node16 to emit ES2022 JS to `dist/`, use Node16 module/resolution, and enable CJS/ESM/JSON interop so you avoid common "import/module" errors.
 
-4. Create the `.env` file with your variables and save it to the `/client` folder:
+3. Create the `.env` file with your variables and save it to the `/client` folder:
 
    1. Ensure dotenv CLI is available:
     
@@ -426,7 +428,7 @@ The client fetches a signed Pyth price update, posts it via Pyth Receiver, then 
         solana config get | sed -n 's/^Keypair Path: //p'
         ```
 
-5. Create `client-post-and-use.ts` with this code and save it in `/client`:
+4. Create `client-post-and-use.ts` with this code and save it in `/client`:
 
     <details>
     <summary>Click to expand: Client script</summary>
